@@ -162,6 +162,14 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
     );
   }
 
+  void _sendNumber(String number) async {
+    Map<String, dynamic>? response = await _sendRequest('POST', 'visited/$number');
+    if (response == null || !response['success']) {
+      print("Error occured");
+      print(response);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -202,25 +210,25 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             onPressed: () async {
                               await Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => AiBarcodeScanner(
-                                    // validator: (value) {
-                                    //   return value.startsWith('https://');
-                                    // },
-                                    canPop: false,
-                                    onScan: (String value) {
-                                      debugPrint(value);
-                                      setState(() {
-                                        print("SCANNED!");
-                                      });
-                                    },
-                                    onDetect: (p0) {},
-                                    onDispose: () {
-                                      debugPrint("Barcode scanner disposed!");
-                                    },
-                                    controller: MobileScannerController(
-                                      detectionSpeed: DetectionSpeed.noDuplicates,
+                                  builder: (context) => Container(
+                                    color: Colors.white,
+                                    child: SafeArea(
+                                      child: AiBarcodeScanner(
+                                        canPop: false,
+                                        onScan: (String value) async {
+                                          await Future.delayed(Duration(milliseconds: 250));
+                                          _sendNumber(value);
+                                          Navigator.pop(context);
+                                        },
+                                        onDetect: (p0) {},
+                                        bottomBarText: "Отсканируйте QR код",
+                                        controller: MobileScannerController(
+                                          detectionSpeed:
+                                          DetectionSpeed.noDuplicates,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  )
                                 ),
                               );
                             },
@@ -245,7 +253,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                           ),
                           VerificationCode(
                             textStyle: TextStyle(
-                                fontSize: 25.0,
+                                fontSize: 20.0,
                                 color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
                             length: 6,

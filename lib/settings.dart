@@ -57,7 +57,7 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '10.0.2.2:8080');
+      settingKey: 'hostname', defaultValue: '158.160.159.204:8080');
 }
 
 final config = Config();
@@ -101,27 +101,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text('Настройки'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(labelText: 'Hostname'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveSettings,
-              child: Text('Сохранить'),
-            ),
-            Spacer(flex: 1),
-            if (widget.isAuthed)
-              ElevatedButton(
-                onPressed: _logout,
-                child: Text('Выйти из аккаунта'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(labelText: 'Hostname'),
               ),
-          ],
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveSettings,
+                child: Text('Сохранить'),
+              ),
+              Spacer(flex: 1),
+              if (widget.isAuthed)
+                ElevatedButton(
+                  onPressed: _logout,
+                  child: Text('Выйти из аккаунта'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                ),
+            ],
+          ),
         ),
       ),
     );
