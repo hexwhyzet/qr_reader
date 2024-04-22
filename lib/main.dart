@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_verification_code/flutter_verification_code.dart';
 import 'package:http/http.dart' as http;
+import 'package:pinput/pinput.dart';
+import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
+import 'package:qr_reader/visits.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 
@@ -39,6 +45,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   bool _isLoading = false;
   String? _serverResponse;
   String? _name;
+  VisitStorage visitStorage = VisitStorage();
 
   @override
   void initState() {
@@ -47,39 +54,11 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _loadAndCheckNumber() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? code = prefs.getString('saved_code');
+    String? code = await config.code.getSetting();
     if (code != null) {
       await _checkAuth(code);
     } else {
       _logOut();
-    }
-  }
-
-  Future<Map<String, dynamic>?> _sendRequest(String method, String endpoint,
-      {Map<String, String>? body}) async {
-    setState(() {
-      _isLoading = true;
-    });
-    String hostname = await config.hostname.getSetting();
-    try {
-      var url = Uri.parse('http://$hostname/api/$endpoint');
-      var response = (method == 'POST')
-          ? await http.post(url, body: body)
-          : await http.get(url);
-
-      if (response.statusCode == 200) {
-        _handleServerResponse(response.body);
-      } else {
-        print('Server error: ${response.body}');
-      }
-      return jsonDecode(response.body);
-    } catch (e) {
-      print('Failed to send request to the server: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -91,19 +70,35 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<bool> _checkAuth(String code) async {
-    if (await _submitNumber(code)) {
+    if (await _submitCode(code)) {
       return true;
     }
     _clearCode();
     return false;
   }
 
-  Future<bool> _submitNumber(String code) async {
-    Map<String, dynamic>? response = await _sendRequest('GET', 'auth/$code');
+  Future<void> _checkStatus(String code) async {
+    Map<String, dynamic>? response = await sendRequest('GET', 'status/$code');
+    print(response);
+    if (response != null && response['success']) {
+      print("JOPA");
+      setState(() {
+        for (var i = 0; i < response['points'].length; i++) {
+          print("KUKU");
+          print(response['points'][i]['timestamp']);
+          visitStorage.addVisit(Visit(response['points'][i]['name'], response['points'][i]['timestamp']));
+        }
+      });
+    }
+  }
+
+  Future<bool> _submitCode(String code) async {
+    Map<String, dynamic>? response = await sendRequest('GET', 'auth/$code');
     if (response != null && response['success']) {
       await _saveCode(code);
       _saveName(response['name']);
       _numberController.clear();
+      _checkStatus(code);
       return true;
     }
     return false;
@@ -140,6 +135,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   Future<void> _logOut() async {
     await _clearCode();
     await _clearName();
+    visitStorage.clear();
   }
 
   void _showErrorDialog() {
@@ -162,11 +158,15 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
     );
   }
 
-  void _sendNumber(String number) async {
-    Map<String, dynamic>? response = await _sendRequest('POST', 'visited/$number');
+  void _sendVisit(String number) async {
+    Map<String, dynamic>? response = await sendRequest('POST', 'visited/$number');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);
+    } else {
+      setState(() {
+        visitStorage.addVisit(Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
+      });
     }
   }
 
@@ -174,6 +174,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         title: Text('QR сканер'),
         actions: [
           IconButton(
@@ -181,8 +182,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                    builder: (context) => SettingsScreen(
-                        logoutCallback: _logOut, isAuthed: _savedCode != null)),
+                    builder: (context) => SettingsScreen(logoutCallback: _logOut, isAuthed: _savedCode != null)),
               );
             },
           )
@@ -194,48 +194,106 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
           child: _isLoading
               ? CircularProgressIndicator()
               : Column(
+                  mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     if (_savedCode != null && _name != null)
-                      Column(
+                      Expanded(
+                          child: Column(
                         children: [
-                          Padding(
-                            child: Text(_name!,
-                                style: TextStyle(
-                                    fontSize: 28.0,
-                                    fontWeight: FontWeight.bold)),
-                            padding: EdgeInsets.only(bottom: 10),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => Container(
-                                    color: Colors.white,
-                                    child: SafeArea(
-                                      child: AiBarcodeScanner(
-                                        canPop: false,
-                                        onScan: (String value) async {
-                                          await Future.delayed(Duration(milliseconds: 250));
-                                          _sendNumber(value);
-                                          Navigator.pop(context);
-                                        },
-                                        onDetect: (p0) {},
-                                        bottomBarText: "Отсканируйте QR код",
-                                        controller: MobileScannerController(
-                                          detectionSpeed:
-                                          DetectionSpeed.noDuplicates,
-                                        ),
-                                      ),
-                                    ),
-                                  )
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: Text(_name!,
+                                        style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center),
+                                  ),
                                 ),
+                                Expanded(
+                                    child: Container(
+                                  child: Stack(
+                                    children: [
+                                      Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: VisitListWidget(storage: visitStorage),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.topCenter,
+                                        child: IgnorePointer(
+                                          child: Container(
+                                            height: 100,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Theme.of(context).backgroundColor,
+                                                  Theme.of(context).backgroundColor.withOpacity(0)
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                )),
+                              ],
+                            ),
+                          ),
+                          Container(height: 10),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.9,
+                            height: 100.0,
+                            child: LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+                              double fontSize = (constraints.maxWidth * 0.8) / 'СКАНИРОВАТЬ'.length;
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                ),
+                                // onPressed: () async {
+                                onPressed: () async {
+                                  _sendVisit("122");
+                                  // await Navigator.of(context).push(
+                                  //   MaterialPageRoute(
+                                  //     builder: (context) => Scaffold(
+                                  //       appBar: AppBar(),
+                                  //       body: Container(
+                                  //         color: Colors.white,
+                                  //         child: SafeArea(
+                                  //           child: AiBarcodeScanner(
+                                  //             canPop: false,
+                                  //             onScan: (String value) async {
+                                  //               await Future.delayed(Duration(milliseconds: 250));
+                                  //               // _sendNumber(value);
+                                  //               Navigator.pop(context);
+                                  //             },
+                                  //             onDetect: (p0) {},
+                                  //             bottomBarText: "Отсканируйте QR код",
+                                  //             controller: MobileScannerController(
+                                  //               detectionSpeed: DetectionSpeed.noDuplicates,
+                                  //             ),
+                                  //           ),
+                                  //         ),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // );
+                                },
+                                child: Text("СКАНИРОВАТЬ",
+                                    style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold)),
                               );
-                            },
-                            child: Text('Сканировать QR код'),
+                            }),
                           ),
                         ],
-                      ),
+                      )),
                     if (_serverResponse != null)
                       Padding(
                         padding: EdgeInsets.all(8.0),
@@ -251,17 +309,27 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                               style: TextStyle(fontSize: 20.0),
                             ),
                           ),
+                          // Pinput(
+                          //   length: 6,
+                          //   defaultPinTheme: defaultPinTheme,
+                          //   focusedPinTheme: focusedPinTheme,
+                          //   submittedPinTheme: submittedPinTheme,
+                          //   validator: (s) {
+                          //     return s == '2222' ? null : 'Pin is incorrect';
+                          //   },
+                          //   pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
+                          //   showCursor: true,
+                          //   onCompleted: (pin) => print(pin),
+                          // )
                           VerificationCode(
-                            textStyle: TextStyle(
-                                fontSize: 20.0,
-                                color: Theme.of(context).primaryColor),
+                            textStyle: TextStyle(fontSize: 20.0, color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
                             length: 6,
                             autofocus: true,
                             digitsOnly: true,
                             underlineWidth: 2.0,
                             onCompleted: (String value) {
-                              _submitNumber(value);
+                              _submitCode(value);
                             },
                             onEditing: (bool value) {},
                           ),
