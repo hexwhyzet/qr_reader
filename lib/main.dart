@@ -1,17 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:flutter_verification_code/flutter_verification_code.dart';
-import 'package:http/http.dart' as http;
-import 'package:pinput/pinput.dart';
+import 'package:qr_reader/botton.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 import 'package:qr_reader/visits.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple.shade700),
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
@@ -43,9 +38,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   TextEditingController _numberController = TextEditingController();
   String? _savedCode;
   bool _isLoading = false;
-  String? _serverResponse;
   String? _name;
   VisitStorage visitStorage = VisitStorage();
+  bool _onRounds = false;
 
   @override
   void initState() {
@@ -62,13 +57,6 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
     }
   }
 
-  void _handleServerResponse(String responseBody) {
-    var data = json.decode(responseBody);
-    setState(() {
-      _serverResponse = data['message'];
-    });
-  }
-
   Future<bool> _checkAuth(String code) async {
     if (await _submitCode(code)) {
       return true;
@@ -79,14 +67,12 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
 
   Future<void> _checkStatus(String code) async {
     Map<String, dynamic>? response = await sendRequest('GET', 'status/$code');
-    print(response);
     if (response != null && response['success']) {
-      print("JOPA");
       setState(() {
-        for (var i = 0; i < response['points'].length; i++) {
-          print("KUKU");
-          print(response['points'][i]['timestamp']);
-          visitStorage.addVisit(Visit(response['points'][i]['name'], response['points'][i]['timestamp']));
+        if (_onRounds = response['on_rounds']) {
+          for (var i = 0; i < response['points'].length; i++) {
+            visitStorage.addVisit(Visit(response['points'][i]['name'], response['points'][i]['timestamp']));
+          }
         }
       });
     }
@@ -105,16 +91,14 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _saveCode(String code) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('saved_number', code);
+    config.code.setSetting(code);
     setState(() {
       _savedCode = code;
     });
   }
 
   Future<void> _clearCode() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('saved_number');
+    config.code.clearSetting();
     setState(() {
       _savedCode = null;
     });
@@ -138,24 +122,23 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
     visitStorage.clear();
   }
 
-  void _showErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: Text('Please enter a six-digit number.'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Ok'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+  Future<void> _startRound() async {
+    Map<String, dynamic>? response = await sendRequest('POST', 'start/$_savedCode');
+    if (response != null && response['success']) {
+      setState(() {
+        _onRounds = true;
+      });
+    }
+  }
+
+  Future<void> _endRound() async {
+    Map<String, dynamic>? response = await sendRequest('POST', 'end/$_savedCode');
+    if (response != null && response['success']) {
+      setState(() {
+        _onRounds = false;
+        visitStorage.clear();
+      });
+    }
   }
 
   void _sendVisit(String number) async {
@@ -174,16 +157,34 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 60,
+        backgroundColor: Theme.of(context).primaryColor,
         surfaceTintColor: Colors.transparent,
-        title: Text('QR сканер'),
+        centerTitle: true,
+        title: SvgPicture.asset(
+          'assets/sostra.svg',
+          height: 40.0,
+          color: Colors.white,
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: const Padding(
+              padding: EdgeInsets.only(right: 7.0),
+              child: Icon(
+                Icons.settings,
+                color: Colors.white,
+                size: 30.0,
+              ),
+            ),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                    builder: (context) => SettingsScreen(logoutCallback: _logOut, isAuthed: _savedCode != null)),
-              );
+                  builder: (context) => SettingsScreen(
+                    logoutCallback: _logOut,
+                    isAuthed: _savedCode != null,
+                  ),
+                ),
+              ).then((_) => setState(() {}));
             },
           )
         ],
@@ -205,12 +206,23 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
+                                if (_onRounds)
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 15),
+                                    child: StyledWideButton(
+                                      text: "ЗАКОНЧИТЬ ОБХОД",
+                                      height: 60.0,
+                                      bg: Colors.red,
+                                      fg: Colors.white,
+                                      onPressed: _endRound,
+                                    ),
+                                  ),
                                 Container(
                                   width: MediaQuery.of(context).size.width,
                                   child: Align(
                                     alignment: Alignment.center,
                                     child: Text(_name!,
-                                        style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
+                                        style: TextStyle(fontSize: 27.5, fontWeight: FontWeight.bold),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -247,58 +259,51 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             ),
                           ),
                           Container(height: 10),
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            height: 100.0,
-                            child: LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-                              double fontSize = (constraints.maxWidth * 0.8) / 'СКАНИРОВАТЬ'.length;
-                              return ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                ),
-                                // onPressed: () async {
-                                onPressed: () async {
-                                  _sendVisit("122");
-                                  // await Navigator.of(context).push(
-                                  //   MaterialPageRoute(
-                                  //     builder: (context) => Scaffold(
-                                  //       appBar: AppBar(),
-                                  //       body: Container(
-                                  //         color: Colors.white,
-                                  //         child: SafeArea(
-                                  //           child: AiBarcodeScanner(
-                                  //             canPop: false,
-                                  //             onScan: (String value) async {
-                                  //               await Future.delayed(Duration(milliseconds: 250));
-                                  //               // _sendNumber(value);
-                                  //               Navigator.pop(context);
-                                  //             },
-                                  //             onDetect: (p0) {},
-                                  //             bottomBarText: "Отсканируйте QR код",
-                                  //             controller: MobileScannerController(
-                                  //               detectionSpeed: DetectionSpeed.noDuplicates,
-                                  //             ),
-                                  //           ),
-                                  //         ),
-                                  //       ),
-                                  //     ),
-                                  //   ),
-                                  // );
-                                },
-                                child: Text("СКАНИРОВАТЬ",
-                                    style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold)),
-                              );
-                            }),
-                          ),
+                          if (_onRounds)
+                            StyledWideButton(
+                              text: "СКАНИРОВАТЬ",
+                              height: 100.0,
+                              bg: Theme.of(context).primaryColor,
+                              fg: Colors.white,
+                              onPressed: () {
+                                _sendVisit("122");
+                                // await Navigator.of(context).push(
+                                //   MaterialPageRoute(
+                                //     builder: (context) => Scaffold(
+                                //       appBar: AppBar(),
+                                //       body: Container(
+                                //         color: Colors.white,
+                                //         child: SafeArea(
+                                //           child: AiBarcodeScanner(
+                                //             canPop: false,
+                                //             onScan: (String value) async {
+                                //               await Future.delayed(Duration(milliseconds: 250));
+                                //               // _sendNumber(value);
+                                //               Navigator.pop(context);
+                                //             },
+                                //             onDetect: (p0) {},
+                                //             bottomBarText: "Отсканируйте QR код",
+                                //             controller: MobileScannerController(
+                                //               detectionSpeed: DetectionSpeed.noDuplicates,
+                                //             ),
+                                //           ),
+                                //         ),
+                                //       ),
+                                //     ),
+                                //   ),
+                                // );
+                              },
+                            )
+                          else
+                            StyledWideButton(
+                              text: "НАЧАТЬ ОБХОД",
+                              height: 100.0,
+                              bg: Theme.of(context).dialogBackgroundColor,
+                              fg: Theme.of(context).primaryColor,
+                              onPressed: _startRound,
+                            )
                         ],
                       )),
-                    if (_serverResponse != null)
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Server Response: $_serverResponse'),
-                      ),
                     if (_savedCode == null)
                       Column(
                         children: [
@@ -309,18 +314,6 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                               style: TextStyle(fontSize: 20.0),
                             ),
                           ),
-                          // Pinput(
-                          //   length: 6,
-                          //   defaultPinTheme: defaultPinTheme,
-                          //   focusedPinTheme: focusedPinTheme,
-                          //   submittedPinTheme: submittedPinTheme,
-                          //   validator: (s) {
-                          //     return s == '2222' ? null : 'Pin is incorrect';
-                          //   },
-                          //   pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
-                          //   showCursor: true,
-                          //   onCompleted: (pin) => print(pin),
-                          // )
                           VerificationCode(
                             textStyle: TextStyle(fontSize: 20.0, color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
