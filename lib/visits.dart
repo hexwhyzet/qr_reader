@@ -121,6 +121,7 @@ class _VisitListWidgetState extends State<VisitListWidget> {
         }
 
         return ListTile(
+          visualDensity: VisualDensity.compact,
           title: Text(widget.storage.visits.reversed.elementAt(index).placeName),
           subtitle: Text(widget.storage.visits.reversed.elementAt(index).timeAgo()),
         );
