@@ -124,7 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (widget.isAuthed)
                 StyledWideButton(
                   text: "Выйти из аккаунта",
-                  onPressed: _saveSettings,
+                  onPressed: _logout,
                   bg: Colors.red,
                   fg: Colors.white,
                   height: 50,
