@@ -7,7 +7,8 @@ class Visit {
   final String placeName;
   final DateTime _timestamp;
 
-  Visit(this.placeName, int timestamp) : _timestamp = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+  Visit(this.placeName, int timestamp)
+      : _timestamp = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
 
   String timeAgo() {
     Duration diff = DateTime.now().difference(_timestamp);
@@ -25,7 +26,11 @@ String formatTimeAgo(int seconds) {
     return 'менее минуты назад';
   } else if (seconds < 3600) {
     int minutes = seconds ~/ 60;
-    return '$minutes ${pluralize(minutes, ['минуту', 'минуты', 'минут'])} назад';
+    return '$minutes ${pluralize(minutes, [
+          'минуту',
+          'минуты',
+          'минут'
+        ])} назад';
   } else if (seconds < 86400) {
     int hours = seconds ~/ 3600;
     return '$hours ${pluralize(hours, ['час', 'часа', 'часов'])} назад';
@@ -121,8 +126,14 @@ class _VisitListWidgetState extends State<VisitListWidget> {
         }
 
         return ListTile(
-          title: Text(widget.storage.visits.reversed.elementAt(index).placeName),
-          subtitle: Text(widget.storage.visits.reversed.elementAt(index).timeAgo()),
+          title: Text(
+            style: TextStyle(fontSize: 15),
+            widget.storage.visits.reversed.elementAt(index).placeName,
+          ),
+          subtitle: Text(
+            style: TextStyle(fontSize: 13),
+            widget.storage.visits.reversed.elementAt(index).timeAgo(),
+          ),
         );
       },
     );
