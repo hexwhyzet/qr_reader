@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -20,11 +21,26 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple.shade700),
+        colorScheme:
+            ColorScheme.fromSeed(seedColor: Colors.deepPurple.shade700),
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      home: NumberStoragePage(),
+      home: Container(
+        color: Theme.of(context).primaryColor,
+        child: SafeArea(
+          top: true,
+          left: false,
+          right: false,
+          bottom: false,
+          child: Container(
+            color: Theme.of(context).backgroundColor,
+            child: SafeArea(
+              child: NumberStoragePage(),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -71,7 +87,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
       setState(() {
         if (_onRounds = response['on_rounds']) {
           for (var i = 0; i < response['points'].length; i++) {
-            visitStorage.addVisit(Visit(response['points'][i]['name'], response['points'][i]['timestamp']));
+            visitStorage.addVisit(Visit(response['points'][i]['name'],
+                response['points'][i]['timestamp']));
           }
         }
       });
@@ -123,7 +140,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _startRound() async {
-    Map<String, dynamic>? response = await sendRequest('POST', 'start/$_savedCode');
+    Map<String, dynamic>? response =
+        await sendRequest('POST', 'start/$_savedCode');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = true;
@@ -132,7 +150,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _endRound() async {
-    Map<String, dynamic>? response = await sendRequest('POST', 'end/$_savedCode');
+    Map<String, dynamic>? response =
+        await sendRequest('POST', 'end/$_savedCode');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = false;
@@ -142,13 +161,15 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   void _sendVisit(String number) async {
-    Map<String, dynamic>? response = await sendRequest('POST', 'visited/$number');
+    Map<String, dynamic>? response =
+        await sendRequest('POST', 'visited/$number');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);
     } else {
       setState(() {
-        visitStorage.addVisit(Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
+        visitStorage.addVisit(
+            Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
       });
     }
   }
@@ -177,14 +198,16 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
               ),
             ),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => SettingsScreen(
-                    logoutCallback: _logOut,
-                    isAuthed: _savedCode != null,
-                  ),
-                ),
-              ).then((_) => setState(() {}));
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (context) => SettingsScreen(
+                        logoutCallback: _logOut,
+                        isAuthed: _savedCode != null,
+                      ),
+                    ),
+                  )
+                  .then((_) => setState(() {}));
             },
           )
         ],
@@ -222,7 +245,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                   child: Align(
                                     alignment: Alignment.center,
                                     child: Text(_name!,
-                                        style: TextStyle(fontSize: 27.5, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.bold),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -232,7 +257,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                     children: [
                                       Align(
                                         alignment: Alignment.bottomCenter,
-                                        child: VisitListWidget(storage: visitStorage),
+                                        child: VisitListWidget(
+                                            storage: visitStorage),
                                       ),
                                       Align(
                                         alignment: Alignment.topCenter,
@@ -244,8 +270,11 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                                 begin: Alignment.topCenter,
                                                 end: Alignment.bottomCenter,
                                                 colors: [
-                                                  Theme.of(context).backgroundColor,
-                                                  Theme.of(context).backgroundColor.withOpacity(0)
+                                                  Theme.of(context)
+                                                      .backgroundColor,
+                                                  Theme.of(context)
+                                                      .backgroundColor
+                                                      .withOpacity(0)
                                                 ],
                                               ),
                                             ),
@@ -265,33 +294,36 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                               height: 100.0,
                               bg: Theme.of(context).primaryColor,
                               fg: Colors.white,
-                              onPressed: () {
-                                _sendVisit("122");
-                                // await Navigator.of(context).push(
-                                //   MaterialPageRoute(
-                                //     builder: (context) => Scaffold(
-                                //       appBar: AppBar(),
-                                //       body: Container(
-                                //         color: Colors.white,
-                                //         child: SafeArea(
-                                //           child: AiBarcodeScanner(
-                                //             canPop: false,
-                                //             onScan: (String value) async {
-                                //               await Future.delayed(Duration(milliseconds: 250));
-                                //               // _sendNumber(value);
-                                //               Navigator.pop(context);
-                                //             },
-                                //             onDetect: (p0) {},
-                                //             bottomBarText: "Отсканируйте QR код",
-                                //             controller: MobileScannerController(
-                                //               detectionSpeed: DetectionSpeed.noDuplicates,
-                                //             ),
-                                //           ),
-                                //         ),
-                                //       ),
-                                //     ),
-                                //   ),
-                                // );
+                              onPressed: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => Scaffold(
+                                      appBar: AppBar(),
+                                      body: Container(
+                                        color: Theme.of(context)
+                                            .dialogBackgroundColor,
+                                        child: SafeArea(
+                                          child: AiBarcodeScanner(
+                                            canPop: false,
+                                            onScan: (String value) async {
+                                              await Future.delayed(
+                                                  Duration(milliseconds: 250));
+                                              _sendVisit(value);
+                                              Navigator.pop(context);
+                                            },
+                                            onDetect: (p0) {},
+                                            bottomBarText:
+                                                "Отсканируйте QR код",
+                                            controller: MobileScannerController(
+                                              detectionSpeed:
+                                                  DetectionSpeed.noDuplicates,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
                               },
                             )
                           else
@@ -315,7 +347,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             ),
                           ),
                           VerificationCode(
-                            textStyle: TextStyle(fontSize: 20.0, color: Theme.of(context).primaryColor),
+                            textStyle: TextStyle(
+                                fontSize: 20.0,
+                                color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
                             length: 6,
                             autofocus: true,
