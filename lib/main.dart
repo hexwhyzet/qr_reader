@@ -9,6 +9,8 @@ import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 import 'package:qr_reader/visits.dart';
 
+import 'alert.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -21,8 +23,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme:
-            ColorScheme.fromSeed(seedColor: Colors.deepPurple.shade700),
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
@@ -82,7 +82,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _checkStatus(String code) async {
-    Map<String, dynamic>? response = await sendRequest('GET', 'status/$code');
+    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'status/$code');
     if (response != null && response['success']) {
       setState(() {
         if (_onRounds = response['on_rounds']) {
@@ -96,13 +96,18 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<bool> _submitCode(String code) async {
-    Map<String, dynamic>? response = await sendRequest('GET', 'auth/$code');
-    if (response != null && response['success']) {
-      await _saveCode(code);
-      _saveName(response['name']);
-      _numberController.clear();
-      _checkStatus(code);
-      return true;
+    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'auth/$code');
+    if (response != null) {
+      if (response['success']) {
+        await _saveCode(code);
+        _saveName(response['name']);
+        _numberController.clear();
+        _checkStatus(code);
+        return true;
+      } else {
+        raiseErrorFlushbar(context, "Неверный код");
+        _numberController.clear();
+      }
     }
     return false;
   }
@@ -141,7 +146,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
 
   Future<void> _startRound() async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'start/$_savedCode');
+        await sendRequest(context, 'POST', 'start/$_savedCode');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = true;
@@ -151,7 +156,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
 
   Future<void> _endRound() async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'end/$_savedCode');
+        await sendRequest(context, 'POST', 'end/$_savedCode');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = false;
@@ -162,7 +167,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
 
   void _sendVisit(String number) async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'visited/$number');
+        await sendRequest(context, 'POST', 'visited/$number');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);
@@ -356,6 +361,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             digitsOnly: true,
                             underlineWidth: 2.0,
                             onCompleted: (String value) {
+                              FocusScope.of(context).unfocus();
                               _submitCode(value);
                             },
                             onEditing: (bool value) {},

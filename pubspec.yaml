@@ -36,6 +36,7 @@ dependencies:
   flutter_verification_code: ^1.1.7
   ai_barcode_scanner: ^3.4.3
   flutter_svg: ^2.0.10+1
+  another_flushbar: ^1.12.30
 
 
   # The following adds the Cupertino Icons font to your application.
