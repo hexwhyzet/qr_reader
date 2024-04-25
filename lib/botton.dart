@@ -6,9 +6,10 @@ class StyledWideButton extends StatelessWidget {
   final Color bg;
   final Color fg;
   final double height;
+  final double textWidth;
 
   const StyledWideButton(
-      {Key, key, required this.text, required this.onPressed, required this.bg, required this.fg, required this.height})
+      {Key, key, required this.text, required this.onPressed, required this.bg, required this.fg, required this.height, this.textWidth = 0.8})
       : super(key: key);
 
   @override
@@ -17,7 +18,7 @@ class StyledWideButton extends StatelessWidget {
       width: MediaQuery.of(context).size.width * 0.9,
       height: height,
       child: LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-        double fontSize = (constraints.maxWidth * 0.8) / text.length;
+        double fontSize = (constraints.maxWidth * textWidth) / text.length;
         return ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: bg,

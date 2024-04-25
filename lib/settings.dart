@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_reader/botton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<String?> _getSetting(String key) async {
@@ -57,7 +58,7 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '10.0.2.2:8080');
+      settingKey: 'hostname', defaultValue: '10.141.11.155:8080');
 }
 
 final config = Config();
@@ -111,17 +112,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: InputDecoration(labelText: 'Hostname'),
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveSettings,
-                child: Text('Сохранить'),
+              StyledWideButton(
+                  text: "Сохранить",
+                  onPressed: _saveSettings,
+                  bg: Theme.of(context).dialogBackgroundColor,
+                  fg: Theme.of(context).primaryColor,
+                  height: 50,
+                  textWidth: 0.5,
               ),
               Spacer(flex: 1),
               if (widget.isAuthed)
-                ElevatedButton(
-                  onPressed: _logout,
-                  child: Text('Выйти из аккаунта'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                ),
+                StyledWideButton(
+                  text: "Выйти из аккаунта",
+                  onPressed: _saveSettings,
+                  bg: Colors.red,
+                  fg: Colors.white,
+                  height: 50,
+                )
             ],
           ),
         ),
