@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_verification_code/flutter_verification_code.dart';
 import 'package:qr_reader/botton.dart';
@@ -11,20 +13,31 @@ import 'package:qr_reader/visits.dart';
 
 import 'alert.dart';
 
+const primaryColor = Color(0xFF006940);
+
 void main() {
-  runApp(const MyApp());
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: primaryColor,
+      systemNavigationBarColor: primaryColor,
+      systemNavigationBarDividerColor: primaryColor,
+    ),
+  );
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+
+  FlexSchemeColor customScheme = FlexSchemeColor.from(primary: primaryColor);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
+      theme: FlexThemeData.light(colors: customScheme),
+      darkTheme: FlexThemeData.dark(colors: customScheme),
       debugShowCheckedModeBanner: false,
       home: Container(
         color: Theme.of(context).primaryColor,
@@ -82,13 +95,12 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _checkStatus(String code) async {
-    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'status/$code');
+    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'guard/$code/round_status');
     if (response != null && response['success']) {
       setState(() {
-        if (_onRounds = response['on_rounds']) {
-          for (var i = 0; i < response['points'].length; i++) {
-            visitStorage.addVisit(Visit(response['points'][i]['name'],
-                response['points'][i]['timestamp']));
+        if (_onRounds = response['is_active']) {
+          for (var i = 0; i < response['visits'].length; i++) {
+            visitStorage.addVisit(Visit(response['visits'][i]['point']['name'], response['visits'][i]['created_at']));
           }
         }
       });
@@ -145,8 +157,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _startRound() async {
-    Map<String, dynamic>? response =
-        await sendRequest(context, 'POST', 'start/$_savedCode');
+    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/start_round');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = true;
@@ -155,8 +166,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _endRound() async {
-    Map<String, dynamic>? response =
-        await sendRequest(context, 'POST', 'end/$_savedCode');
+    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/end_round');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = false;
@@ -166,15 +176,13 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   void _sendVisit(String number) async {
-    Map<String, dynamic>? response =
-        await sendRequest(context, 'POST', 'visited/$number');
+    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/visit_point/$number');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);
     } else {
       setState(() {
-        visitStorage.addVisit(
-            Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
+        visitStorage.addVisit(Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
       });
     }
   }
@@ -183,7 +191,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 60,
+        toolbarHeight: 65,
         backgroundColor: Theme.of(context).primaryColor,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
@@ -250,9 +258,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                   child: Align(
                                     alignment: Alignment.center,
                                     child: Text(_name!,
-                                        style: TextStyle(
-                                            fontSize: 25,
-                                            fontWeight: FontWeight.bold),
+                                        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -262,8 +268,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                     children: [
                                       Align(
                                         alignment: Alignment.bottomCenter,
-                                        child: VisitListWidget(
-                                            storage: visitStorage),
+                                        child: VisitListWidget(storage: visitStorage),
                                       ),
                                       Align(
                                         alignment: Alignment.topCenter,
@@ -275,11 +280,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                                 begin: Alignment.topCenter,
                                                 end: Alignment.bottomCenter,
                                                 colors: [
-                                                  Theme.of(context)
-                                                      .backgroundColor,
-                                                  Theme.of(context)
-                                                      .backgroundColor
-                                                      .withOpacity(0)
+                                                  Colors.white,
+                                                  Colors.white.withOpacity(0)
                                                 ],
                                               ),
                                             ),
@@ -303,25 +305,23 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                 await Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => Scaffold(
-                                      appBar: AppBar(),
+                                      appBar: AppBar(
+                                        toolbarHeight: 65,
+                                      ),
                                       body: Container(
-                                        color: Theme.of(context)
-                                            .dialogBackgroundColor,
+                                        color: Theme.of(context).dialogBackgroundColor,
                                         child: SafeArea(
                                           child: AiBarcodeScanner(
                                             canPop: false,
                                             onScan: (String value) async {
-                                              await Future.delayed(
-                                                  Duration(milliseconds: 250));
+                                              await Future.delayed(Duration(milliseconds: 500));
                                               _sendVisit(value);
                                               Navigator.pop(context);
                                             },
                                             onDetect: (p0) {},
-                                            bottomBarText:
-                                                "Отсканируйте QR код",
+                                            bottomBarText: "Отсканируйте QR код",
                                             controller: MobileScannerController(
-                                              detectionSpeed:
-                                                  DetectionSpeed.noDuplicates,
+                                              detectionSpeed: DetectionSpeed.noDuplicates,
                                             ),
                                           ),
                                         ),
@@ -352,9 +352,7 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             ),
                           ),
                           VerificationCode(
-                            textStyle: TextStyle(
-                                fontSize: 20.0,
-                                color: Theme.of(context).primaryColor),
+                            textStyle: TextStyle(fontSize: 20.0, color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
                             length: 6,
                             autofocus: true,

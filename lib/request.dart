@@ -8,6 +8,7 @@ Future<Map<String, dynamic>?> sendRequest(context, String method, String endpoin
   String hostname = await config.hostname.getSetting();
   try {
     var url = Uri.parse('http://$hostname/api/$endpoint');
+    print(url);
     var response = (method == 'POST') ? await http.post(url, body: body).timeout(Duration(milliseconds: 500)) : await http.get(url).timeout(Duration(milliseconds: 1000));
 
     if (response.statusCode != 200) {

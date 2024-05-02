@@ -100,6 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 65,
         title: Text('Настройки'),
       ),
       body: SafeArea(

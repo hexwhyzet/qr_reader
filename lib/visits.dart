@@ -8,10 +8,10 @@ class Visit {
   final DateTime _timestamp;
 
   Visit(this.placeName, int timestamp)
-      : _timestamp = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+      : _timestamp = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000, isUtc: false);
 
   String timeAgo() {
-    Duration diff = DateTime.now().difference(_timestamp);
+    Duration diff = DateTime.now().toUtc().difference(_timestamp);
     return formatTimeAgo(diff.inSeconds);
   }
 
@@ -117,6 +117,7 @@ class _VisitListWidgetState extends State<VisitListWidget> {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      physics: BouncingScrollPhysics(),
       shrinkWrap: true,
       reverse: true,
       itemCount: widget.storage.visits.length + 1,
