@@ -100,6 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).primaryColor,
         toolbarHeight: 65,
         title: Text('Настройки'),
       ),

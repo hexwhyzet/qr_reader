@@ -21,6 +21,8 @@ void main() {
       statusBarColor: primaryColor,
       systemNavigationBarColor: primaryColor,
       systemNavigationBarDividerColor: primaryColor,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.light,
     ),
   );
 
@@ -39,20 +41,28 @@ class MyApp extends StatelessWidget {
       theme: FlexThemeData.light(colors: customScheme),
       darkTheme: FlexThemeData.dark(colors: customScheme),
       debugShowCheckedModeBanner: false,
-      home: Container(
-        color: Theme.of(context).primaryColor,
-        child: SafeArea(
-          top: true,
-          left: false,
-          right: false,
-          bottom: true,
-          child: Container(
+      home: Builder(
+        builder: (BuildContext context) {
+          return Container(
             color: Theme.of(context).primaryColor,
             child: SafeArea(
-              child: NumberStoragePage(),
+              top: true,
+              left: false,
+              right: false,
+              bottom: false,
+              child: Container(
+                color: Theme.of(context).canvasColor,
+                child: SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  bottom: true,
+                  child: NumberStoragePage(),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -95,12 +105,14 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _checkStatus(String code) async {
-    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'guard/$code/round_status');
+    Map<String, dynamic>? response =
+        await sendRequest(context, 'GET', 'guard/$code/round_status');
     if (response != null && response['success']) {
       setState(() {
         if (_onRounds = response['is_active']) {
           for (var i = 0; i < response['visits'].length; i++) {
-            visitStorage.addVisit(Visit(response['visits'][i]['point']['name'], response['visits'][i]['created_at']));
+            visitStorage.addVisit(Visit(response['visits'][i]['point']['name'],
+                response['visits'][i]['created_at']));
           }
         }
       });
@@ -108,7 +120,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<bool> _submitCode(String code) async {
-    Map<String, dynamic>? response = await sendRequest(context, 'GET', 'auth/$code');
+    Map<String, dynamic>? response =
+        await sendRequest(context, 'GET', 'auth/$code');
     if (response != null) {
       if (response['success']) {
         await _saveCode(code);
@@ -157,7 +170,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _startRound() async {
-    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/start_round');
+    Map<String, dynamic>? response =
+        await sendRequest(context, 'POST', 'guard/$_savedCode/start_round');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = true;
@@ -166,7 +180,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   Future<void> _endRound() async {
-    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/end_round');
+    Map<String, dynamic>? response =
+        await sendRequest(context, 'POST', 'guard/$_savedCode/end_round');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = false;
@@ -176,13 +191,15 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
   }
 
   void _sendVisit(String number) async {
-    Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/$_savedCode/visit_point/$number');
+    Map<String, dynamic>? response = await sendRequest(
+        context, 'POST', 'guard/$_savedCode/visit_point/$number');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);
     } else {
       setState(() {
-        visitStorage.addVisit(Visit(response['name'], DateTime.now().millisecondsSinceEpoch));
+        visitStorage
+            .addVisit(Visit(response['point']['name'], response['created_at']));
       });
     }
   }
@@ -258,7 +275,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                   child: Align(
                                     alignment: Alignment.center,
                                     child: Text(_name!,
-                                        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.bold),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -268,7 +287,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                     children: [
                                       Align(
                                         alignment: Alignment.bottomCenter,
-                                        child: VisitListWidget(storage: visitStorage),
+                                        child: VisitListWidget(
+                                            storage: visitStorage),
                                       ),
                                       Align(
                                         alignment: Alignment.topCenter,
@@ -280,8 +300,10 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                                 begin: Alignment.topCenter,
                                                 end: Alignment.bottomCenter,
                                                 colors: [
-                                                  Colors.white,
-                                                  Colors.white.withOpacity(0)
+                                                  Theme.of(context).canvasColor,
+                                                  Theme.of(context)
+                                                      .canvasColor
+                                                      .withOpacity(0)
                                                 ],
                                               ),
                                             ),
@@ -307,22 +329,27 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                     builder: (context) => Scaffold(
                                       backgroundColor: Colors.white,
                                       appBar: AppBar(
+                                        backgroundColor:
+                                            Theme.of(context).primaryColor,
                                         toolbarHeight: 65,
                                       ),
                                       body: Container(
-                                        color: Colors.red,
+                                        color: Theme.of(context).canvasColor,
                                         child: SafeArea(
                                           child: AiBarcodeScanner(
                                             canPop: false,
                                             onScan: (String value) async {
-                                              await Future.delayed(Duration(milliseconds: 500));
+                                              await Future.delayed(
+                                                  Duration(milliseconds: 500));
                                               _sendVisit(value);
                                               Navigator.pop(context);
                                             },
                                             onDetect: (p0) {},
-                                            bottomBarText: "Отсканируйте QR код",
+                                            bottomBarText:
+                                                "Отсканируйте QR код",
                                             controller: MobileScannerController(
-                                              detectionSpeed: DetectionSpeed.noDuplicates,
+                                              detectionSpeed:
+                                                  DetectionSpeed.noDuplicates,
                                             ),
                                           ),
                                         ),
@@ -353,7 +380,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                             ),
                           ),
                           VerificationCode(
-                            textStyle: TextStyle(fontSize: 20.0, color: Theme.of(context).primaryColor),
+                            textStyle: TextStyle(
+                                fontSize: 20.0,
+                                color: Theme.of(context).primaryColor),
                             keyboardType: TextInputType.number,
                             length: 6,
                             autofocus: true,
