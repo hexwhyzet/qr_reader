@@ -45,9 +45,9 @@ class MyApp extends StatelessWidget {
           top: true,
           left: false,
           right: false,
-          bottom: false,
+          bottom: true,
           child: Container(
-            color: Theme.of(context).backgroundColor,
+            color: Theme.of(context).primaryColor,
             child: SafeArea(
               child: NumberStoragePage(),
             ),
@@ -305,11 +305,12 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                 await Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) => Scaffold(
+                                      backgroundColor: Colors.white,
                                       appBar: AppBar(
                                         toolbarHeight: 65,
                                       ),
                                       body: Container(
-                                        color: Theme.of(context).dialogBackgroundColor,
+                                        color: Colors.red,
                                         child: SafeArea(
                                           child: AiBarcodeScanner(
                                             canPop: false,
