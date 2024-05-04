@@ -9,7 +9,7 @@ Future<Map<String, dynamic>?> sendRequest(context, String method, String endpoin
   try {
     var url = Uri.parse('http://$hostname/api/$endpoint');
     print(url);
-    var response = (method == 'POST') ? await http.post(url, body: body).timeout(Duration(milliseconds: 2000)) : await http.get(url).timeout(Duration(milliseconds: 1000));
+    var response = (method == 'POST') ? await http.post(url, body: body).timeout(Duration(milliseconds: 5000)) : await http.get(url).timeout(Duration(milliseconds: 1000));
 
     if (response.statusCode != 200) {
       print('Server error: ${response.body}');
