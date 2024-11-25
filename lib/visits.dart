@@ -3,12 +3,67 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+enum PointType {
+  defaultType('default'),
+  fireExtinguisher('fire_extinguisher');
+
+  final String label;
+
+  const PointType(this.label);
+
+  static PointType fromString(String label) {
+    return values.firstWhere(
+      (v) => v.label == label,
+      orElse: () => PointType.defaultType,
+    );
+  }
+}
+
+class Point {
+  final String name;
+  final PointType pointType;
+  final DateTime? expirationDate;
+  final bool hasFireExtinguisher;
+
+  Point({
+    required this.name,
+    required this.pointType,
+    this.expirationDate,
+    this.hasFireExtinguisher = false,
+  });
+
+  factory Point.fromJson(Map<String, dynamic> json) {
+    return Point(
+      name: json['name'],
+      pointType: PointType.fromString(json['point_type']),
+      expirationDate: json['expiration_date'] != null
+          ? DateTime.parse(json['expiration_date'])
+          : null,
+    );
+  }
+
+  bool isExpired() {
+    if (expirationDate == null) return false;
+    DateTime today = DateTime.now();
+    DateTime currentDate = DateTime(today.year, today.month, today.day);
+    return !currentDate.isBefore(expirationDate!);
+  }
+
+  @override
+  String toString() {
+    return 'Point(name: $name, pointType: ${pointType.name}, '
+        'expirationDate: ${expirationDate?.toIso8601String()}, '
+        'hasFireExtinguisher: $hasFireExtinguisher)';
+  }
+}
+
 class Visit {
-  final String placeName;
+  final Point point;
   final DateTime _timestamp;
 
-  Visit(this.placeName, int timestamp)
-      : _timestamp = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000, isUtc: false);
+  Visit(this.point, int timestamp)
+      : _timestamp =
+            DateTime.fromMillisecondsSinceEpoch(timestamp * 1000, isUtc: false);
 
   String timeAgo() {
     Duration diff = DateTime.now().toUtc().difference(_timestamp);
@@ -114,6 +169,14 @@ class _VisitListWidgetState extends State<VisitListWidget> {
     super.dispose();
   }
 
+  String _formatExpiration(Point point) {
+    String result = 'Срок годности ${point.expirationDate!.toIso8601String().split('T').first}';
+    if (point.isExpired()) {
+      result += ' истек!';
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -126,15 +189,40 @@ class _VisitListWidgetState extends State<VisitListWidget> {
           return const ListTile(); // Extra empty tie for scroll to top
         }
 
+        bool isExpired = widget.storage.visits.reversed.elementAt(index).point.isExpired();
+
         return ListTile(
           visualDensity: VisualDensity.compact,
+          horizontalTitleGap: 10,
+          leading:
+              widget.storage.visits.reversed.elementAt(index).point.pointType ==
+                      PointType.fireExtinguisher
+                  ? const Icon(
+                      Icons.fire_extinguisher,
+                      color: Colors.red,
+                      size: 35,
+                    )
+                  : null,
           title: Text(
             style: TextStyle(fontSize: 15),
-            widget.storage.visits.reversed.elementAt(index).placeName,
+            widget.storage.visits.reversed.elementAt(index).point.name,
           ),
-          subtitle: Text(
-            style: TextStyle(fontSize: 13),
-            widget.storage.visits.reversed.elementAt(index).timeAgo(),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                style: TextStyle(fontSize: 13),
+                widget.storage.visits.reversed.elementAt(index).timeAgo(),
+              ),
+              if (widget.storage.visits.reversed.elementAt(index).point.expirationDate != null)
+                Text(
+                  _formatExpiration(widget.storage.visits.reversed.elementAt(index).point),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isExpired ? Colors.red : Colors.black,
+                  ),
+                ),
+            ],
           ),
         );
       },

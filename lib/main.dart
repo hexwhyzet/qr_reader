@@ -111,7 +111,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
       setState(() {
         if (_onRounds = response['is_active']) {
           for (var i = 0; i < response['visits'].length; i++) {
-            visitStorage.addVisit(Visit(response['visits'][i]['point']['name'],
+            visitStorage.addVisit(Visit(
+                Point.fromJson(response['visits'][i]['point']),
                 response['visits'][i]['created_at']));
           }
         }
@@ -198,8 +199,8 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
       print(response);
     } else {
       setState(() {
-        visitStorage
-            .addVisit(Visit(response['point']['name'], response['created_at']));
+        visitStorage.addVisit(
+            Visit(Point.fromJson(response['point']), response['created_at']));
       });
     }
   }

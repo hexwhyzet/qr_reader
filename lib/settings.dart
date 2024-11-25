@@ -58,7 +58,7 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '10.141.11.155:8080');
+      settingKey: 'hostname', defaultValue: '130.193.44.171:8000');
 }
 
 final config = Config();
