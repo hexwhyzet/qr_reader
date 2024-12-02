@@ -289,7 +289,9 @@ class _NumberStoragePageState extends State<NumberStoragePage> {
                                       Align(
                                         alignment: Alignment.bottomCenter,
                                         child: VisitListWidget(
-                                            storage: visitStorage),
+                                            storage: visitStorage,
+                                          code: _savedCode!,
+                                        ),
                                       ),
                                       Align(
                                         alignment: Alignment.topCenter,

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:qr_reader/alert.dart';
+import 'package:qr_reader/request.dart';
 
 enum PointType {
   defaultType('default'),
@@ -20,12 +22,14 @@ enum PointType {
 }
 
 class Point {
+  final int id;
   final String name;
   final PointType pointType;
   final DateTime? expirationDate;
   final bool hasFireExtinguisher;
 
   Point({
+    required this.id,
     required this.name,
     required this.pointType,
     this.expirationDate,
@@ -34,6 +38,7 @@ class Point {
 
   factory Point.fromJson(Map<String, dynamic> json) {
     return Point(
+      id: json['id'],
       name: json['name'],
       pointType: PointType.fromString(json['point_type']),
       expirationDate: json['expiration_date'] != null
@@ -137,8 +142,9 @@ class VisitStorage {
 
 class VisitListWidget extends StatefulWidget {
   final VisitStorage storage;
+  final String code;
 
-  VisitListWidget({required this.storage});
+  VisitListWidget({required this.storage, required this.code});
 
   @override
   _VisitListWidgetState createState() => _VisitListWidgetState();
@@ -170,11 +176,32 @@ class _VisitListWidgetState extends State<VisitListWidget> {
   }
 
   String _formatExpiration(Point point) {
-    String result = 'Срок годности ${point.expirationDate!.toIso8601String().split('T').first}';
+    String result =
+        'Срок годности ${point.expirationDate!.toIso8601String().split('T').first}';
     if (point.isExpired()) {
       result += ' истек!';
     }
     return result;
+  }
+
+  void _showModalBottomSheet(BuildContext context, int point_id) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
+      builder: (BuildContext innerContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(innerContext).viewInsets.bottom,
+          ),
+          child: ModalBottomSheetContent(context, widget.code, point_id),
+        );
+      },
+    );
   }
 
   @override
@@ -189,7 +216,8 @@ class _VisitListWidgetState extends State<VisitListWidget> {
           return const ListTile(); // Extra empty tie for scroll to top
         }
 
-        bool isExpired = widget.storage.visits.reversed.elementAt(index).point.isExpired();
+        bool isExpired =
+            widget.storage.visits.reversed.elementAt(index).point.isExpired();
 
         return ListTile(
           visualDensity: VisualDensity.compact,
@@ -214,9 +242,14 @@ class _VisitListWidgetState extends State<VisitListWidget> {
                 style: TextStyle(fontSize: 13),
                 widget.storage.visits.reversed.elementAt(index).timeAgo(),
               ),
-              if (widget.storage.visits.reversed.elementAt(index).point.expirationDate != null)
+              if (widget.storage.visits.reversed
+                      .elementAt(index)
+                      .point
+                      .expirationDate !=
+                  null)
                 Text(
-                  _formatExpiration(widget.storage.visits.reversed.elementAt(index).point),
+                  _formatExpiration(
+                      widget.storage.visits.reversed.elementAt(index).point),
                   style: TextStyle(
                     fontSize: 13,
                     color: isExpired ? Colors.red : Colors.black,
@@ -224,8 +257,73 @@ class _VisitListWidgetState extends State<VisitListWidget> {
                 ),
             ],
           ),
+          trailing: IconButton(
+            icon: Icon(Icons.report_problem, size: 30, color: Colors.grey),
+            onPressed: () => {_showModalBottomSheet(context, widget.storage.visits.reversed.elementAt(index).point.id)},
+          ),
         );
       },
+    );
+  }
+}
+
+class ModalBottomSheetContent extends StatefulWidget {
+  final String code;
+  final int point_id;
+
+  ModalBottomSheetContent(context, this.code, this.point_id);
+
+  @override
+  _ModalBottomSheetContentState createState() =>
+      _ModalBottomSheetContentState();
+}
+
+class _ModalBottomSheetContentState extends State<ModalBottomSheetContent> {
+  final TextEditingController _textController = TextEditingController();
+
+  void _sendText(BuildContext context) async {
+    final text = _textController.text;
+    if (text.isNotEmpty) {
+      Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/${widget.code}/visit_point/${widget.point_id}/add_message', body: {'text': text});
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      if (response?['success']) {
+        await raiseSuccessFlushbar(context, "Сообщение отправлено");
+      } else {
+        await raiseErrorFlushbar(context, "Сообщение не удалось доставить");
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Напишите ваше замечание по точке',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                labelText: 'Введите текст',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _sendText(context),
+              child: Text('Отрпавить'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

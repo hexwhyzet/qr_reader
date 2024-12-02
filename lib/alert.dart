@@ -1,8 +1,8 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 
-void raiseFlushbar(context, bool isSuccess, String message) {
-  Flushbar(
+Future<void> raiseFlushbar(context, bool isSuccess, String message) async {
+  await Flushbar(
     flushbarPosition: FlushbarPosition.TOP,
     borderRadius: BorderRadius.circular(8),
     margin: EdgeInsets.all(8),
@@ -15,10 +15,10 @@ void raiseFlushbar(context, bool isSuccess, String message) {
   ).show(context);
 }
 
-void raiseSuccessFlushbar(context, String message) {
+Future<void> raiseSuccessFlushbar(context, String message) async {
   raiseFlushbar(context, true, message);
 }
 
-void raiseErrorFlushbar(context, String message) {
+Future<void> raiseErrorFlushbar(context, String message) async {
   raiseFlushbar(context, false, message);
 }
