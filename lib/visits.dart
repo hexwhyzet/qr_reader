@@ -252,14 +252,17 @@ class _VisitListWidgetState extends State<VisitListWidget> {
                       widget.storage.visits.reversed.elementAt(index).point),
                   style: TextStyle(
                     fontSize: 13,
-                    color: isExpired ? Colors.red : Colors.black,
+                    color: isExpired ? Colors.red : Colors.green,
                   ),
                 ),
             ],
           ),
           trailing: IconButton(
             icon: Icon(Icons.report_problem, size: 30, color: Colors.grey),
-            onPressed: () => {_showModalBottomSheet(context, widget.storage.visits.reversed.elementAt(index).point.id)},
+            onPressed: () => {
+              _showModalBottomSheet(context,
+                  widget.storage.visits.reversed.elementAt(index).point.id)
+            },
           ),
         );
       },
@@ -284,7 +287,9 @@ class _ModalBottomSheetContentState extends State<ModalBottomSheetContent> {
   void _sendText(BuildContext context) async {
     final text = _textController.text;
     if (text.isNotEmpty) {
-      Map<String, dynamic>? response = await sendRequest(context, 'POST', 'guard/${widget.code}/visit_point/${widget.point_id}/add_message', body: {'text': text});
+      Map<String, dynamic>? response = await sendRequest(context, 'POST',
+          'guard/${widget.code}/visit_point/${widget.point_id}/add_message',
+          body: {'text': text});
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
