@@ -58,16 +58,15 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '130.193.44.171:8000');
+      settingKey: 'hostname', defaultValue: '10.0.2.2:8000');
 }
 
 final config = Config();
 
 class SettingsScreen extends StatefulWidget {
-  final VoidCallback logoutCallback;
-  final bool isAuthed;
+  final VoidCallback? logoutCallback;
 
-  SettingsScreen({required this.logoutCallback, required this.isAuthed});
+  SettingsScreen({required this.logoutCallback});
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
@@ -92,7 +91,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _logout() {
-    widget.logoutCallback();
+    if (widget.logoutCallback != null) {
+      widget.logoutCallback!();
+    }
     Navigator.of(context).pop();
   }
 
@@ -115,15 +116,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 20),
               StyledWideButton(
-                  text: "Сохранить",
-                  onPressed: _saveSettings,
-                  bg: Theme.of(context).dialogBackgroundColor,
-                  fg: Theme.of(context).primaryColor,
-                  height: 50,
-                  textWidth: 0.5,
+                text: "Сохранить",
+                onPressed: _saveSettings,
+                bg: Theme.of(context).dialogBackgroundColor,
+                fg: Theme.of(context).primaryColor,
+                height: 50,
+                textWidth: 0.5,
               ),
               Spacer(flex: 1),
-              if (widget.isAuthed)
+              if (widget.logoutCallback != null)
                 StyledWideButton(
                   text: "Выйти из аккаунта",
                   onPressed: _logout,

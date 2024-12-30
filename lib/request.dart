@@ -1,21 +1,38 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:qr_reader/alert.dart';
+import 'dart:ui';
 
+import 'package:dio/dio.dart';
 import 'package:qr_reader/settings.dart';
 
-Future<Map<String, dynamic>?> sendRequest(context, String method, String endpoint, {Map<String, String>? body}) async {
-  String hostname = await config.hostname.getSetting();
-  try {
-    var url = Uri.parse('http://$hostname/api/$endpoint');
-    var response = (method == 'POST') ? await http.post(url, body: body).timeout(Duration(seconds: 5)) : await http.get(url).timeout(Duration(seconds: 5));
+import 'interceptors.dart';
 
-    if (response.statusCode != 200) {
-      print('Server error: ${response.body}');
-    }
-    return jsonDecode(response.body);
-  } catch (e) {
-    raiseErrorFlushbar(context, "Ошибка запроса, проверьте интернет соединение");
-    print('Failed to send request to the server: $e');
+final dio = Dio();
+
+Future<void> setupDioInterceptors({
+  required Future<String?> Function() getToken,
+  required Future<String?> Function() getRefreshToken,
+  required Future<void> Function(String) saveToken,
+  required Future<void> Function(String) saveRefreshToken,
+  required VoidCallback onUnauthorized,
+}) async {
+  dio.interceptors.add(AuthInterceptor(
+    getAccessToken: getToken,
+    getRefreshToken: getRefreshToken,
+    saveAccessToken: saveToken,
+    saveRefreshToken: saveRefreshToken,
+    onUnauthorized: onUnauthorized,
+  ));
+}
+
+Future<Map<String, dynamic>?> sendRequest(String method, String endpoint,
+    {Map<String, String>? body}) async {
+  String hostname = await config.hostname.getSetting();
+  var url = Uri.parse('http://$hostname/api/$endpoint');
+  var response = (method == 'POST')
+      ? await dio.post(url.toString(), data: body).timeout(const Duration(seconds: 5))
+      : await dio.get(url.toString()).timeout(const Duration(seconds: 5));
+
+  if (response.statusCode != 200) {
+    print('Server error: ${response.data}');
   }
+  return response.data;
 }

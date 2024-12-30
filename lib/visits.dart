@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:qr_reader/alert.dart';
@@ -287,7 +286,7 @@ class _ModalBottomSheetContentState extends State<ModalBottomSheetContent> {
   void _sendText(BuildContext context) async {
     final text = _textController.text;
     if (text.isNotEmpty) {
-      Map<String, dynamic>? response = await sendRequest(context, 'POST',
+      Map<String, dynamic>? response = await sendRequest('POST',
           'guard/${widget.code}/visit_point/${widget.point_id}/add_message',
           body: {'text': text});
       if (Navigator.canPop(context)) {
