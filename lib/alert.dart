@@ -16,9 +16,9 @@ Future<void> raiseFlushbar(context, bool isSuccess, String message) async {
 }
 
 Future<void> raiseSuccessFlushbar(context, String message) async {
-  raiseFlushbar(context, true, message);
+  await raiseFlushbar(context, true, message);
 }
 
 Future<void> raiseErrorFlushbar(context, String message) async {
-  raiseFlushbar(context, false, message);
+  await raiseFlushbar(context, false, message);
 }

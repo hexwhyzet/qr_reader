@@ -4,6 +4,9 @@ import 'package:qr_reader/qr_mini_app.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 
+import 'canteen_manager_mini_app.dart';
+import 'canteen_mini_app.dart';
+
 class _IconInfo {
   final IconData icon;
   final String title;
@@ -20,10 +23,10 @@ class _IconInfo {
 class MenuScreen extends StatefulWidget {
   final VoidCallback onLogout;
 
-  MenuScreen(this.onLogout);
+  const MenuScreen(this.onLogout, {super.key});
 
   @override
-  _MenuScreenState createState() => _MenuScreenState();
+  State<MenuScreen> createState() => _MenuScreenState();
 }
 
 class _MenuScreenState extends State<MenuScreen> {
@@ -42,6 +45,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
     bool isQrServiceAvailable = false;
     bool isCanteenServiceAvailable = false;
+    bool isCanteenManagerAvailable = false;
 
     try {
       if (response != null &&
@@ -53,6 +57,12 @@ class _MenuScreenState extends State<MenuScreen> {
               .setSetting(response['extra']['guard_id'].toString());
           isQrServiceAvailable = true;
         }
+        if (response['groups'].contains('canteen_employee')) {
+          isCanteenServiceAvailable = true;
+        }
+        if (response['groups'].contains('canteen_manager')) {
+          isCanteenManagerAvailable = true;
+        }
       }
     } catch (e) {
       print("Failed to parse whoiam request: $e");
@@ -63,7 +73,12 @@ class _MenuScreenState extends State<MenuScreen> {
           icon: Icons.fastfood,
           title: 'Столовая',
           isAvailable: isCanteenServiceAvailable,
-          screen: Container()),
+          screen: const CanteenMiniApp()),
+      _IconInfo(
+          icon: Icons.fastfood,
+          title: 'Столовая (менеджер)',
+          isAvailable: isCanteenManagerAvailable,
+          screen: const CanteenManagerMiniApp()),
       _IconInfo(
           icon: Icons.qr_code,
           title: 'Обход',
@@ -132,7 +147,7 @@ class IconGrid extends StatelessWidget {
                 color: info.isAvailable ? Colors.green : Colors.grey,
               ),
               SizedBox(height: 8.0),
-              Text(info.title),
+              Text(info.title, textAlign: TextAlign.center,),
               Text(
                 info.isAvailable ? 'Доступно' : 'Недоступно',
                 style: TextStyle(
