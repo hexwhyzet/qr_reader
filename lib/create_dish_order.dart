@@ -17,16 +17,18 @@ class CreateDishOrderView extends StatefulWidget {
 class _CreateDishOrderState extends State<CreateDishOrderView> {
   late List<dynamic> dishes;
   List<int> selectedDishes = [];
-  final DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
+  final DateTime firstDate = DateTime.now().add(const Duration(days: 1));
+  final DateTime lastDate = DateTime.now().add(const Duration(days: 7));
   DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
   bool createOrderButtonEnabled = true;
+  String? selectedCategory;
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: tomorrow,
-      lastDate: DateTime(2101),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null && picked != selectedDate) {
       setState(() {
@@ -39,6 +41,13 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
   void initState() {
     super.initState();
     dishes = widget.dishes;
+  }
+
+  List<dynamic> get filteredDishes {
+    if (selectedCategory == null || selectedCategory!.isEmpty) {
+      return dishes;
+    }
+    return dishes.where((dish) => dish['category'] == selectedCategory).toList();
   }
 
   @override
@@ -78,10 +87,32 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
                 ],
               ),
             ),
+            SliverToBoxAdapter(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                hint: const Text("Выберите категорию блюд"),
+                value: selectedCategory,
+                onChanged: (String? value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+                items: [
+                  const DropdownMenuItem(value: '', child: Text("Все категории")),
+                  ...dishes
+                      .map((dish) => dish['category'] as String)
+                      .toSet()
+                      .map((category) => DropdownMenuItem(
+                    value: category,
+                    child: Text(getDishTypeName(category)),
+                  )),
+                ],
+              ),
+            ),
             SliverList(
               delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                  final dish = dishes[index];
+                  final dish = filteredDishes[index];
                   return ListTile(
                     leading: dish['photo'] != null
                         ? Image.network(
@@ -90,7 +121,11 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
                       height: 50,
                       fit: BoxFit.cover,
                     )
-                        : const SizedBox(width: 50, height: 50, child: Icon(Icons.fastfood),),
+                        : const SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Icon(Icons.fastfood),
+                    ),
                     title: Text(dish['name']),
                     subtitle: Text(getDishTypeName(dish['category'])),
                     trailing: Checkbox(
@@ -107,14 +142,13 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
                     ),
                   );
                 },
-                childCount: dishes.length,
+                childCount: filteredDishes.length,
               ),
             ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child:
-                ElevatedButton(
+                child: ElevatedButton(
                   onPressed: () async {
                     if (!createOrderButtonEnabled) {
                       return;

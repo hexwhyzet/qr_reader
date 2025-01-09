@@ -1,16 +1,61 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_reader/request.dart';
 
-class CanteenManagerMiniApp extends StatefulWidget {
-
+class CanteenManagerMiniApp extends StatelessWidget {
   const CanteenManagerMiniApp({super.key});
 
   @override
-  State<CanteenManagerMiniApp> createState() => _CanteenManagerMiniAppState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Менеджер столовой'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OrderStats(),
+                  ),
+                );
+              },
+              child: const Text('Просмотр статистики по заказам'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FeedbacksPage(),
+                  ),
+                );
+              },
+              child: const Text('Просмотр отзывов'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _CanteenManagerMiniAppState extends State<CanteenManagerMiniApp> {
+class OrderStats extends StatefulWidget {
+
+  const OrderStats({super.key});
+
+  @override
+  State<OrderStats> createState() => _OrderStatsState();
+}
+
+class _OrderStatsState extends State<OrderStats> {
   List<dynamic> dishes = [];
   DateTime selectedDate = DateTime.now();
   bool isLoading = true;
@@ -59,7 +104,7 @@ class _CanteenManagerMiniAppState extends State<CanteenManagerMiniApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Менеджер столовой'),
+        title: const Text('Статистика по заказам'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -109,5 +154,88 @@ class _CanteenManagerMiniAppState extends State<CanteenManagerMiniApp> {
         ),
       ),
     );
+  }
+}
+
+class FeedbacksPage extends StatefulWidget {
+  const FeedbacksPage({super.key});
+
+  @override
+  State<FeedbacksPage> createState() => _FeedbacksPageState();
+}
+
+class _FeedbacksPageState extends State<FeedbacksPage> {
+  List<dynamic> feedbacks = [];
+  List<dynamic> dishes = [];
+  bool isLoadingFeedbacks = true;
+  bool isLoadingDishes = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchFeedback();
+    fetchDishes();
+  }
+
+  Future<void> fetchFeedback() async {
+    try {
+      final response = await sendRequest("GET", "food/feedback/");
+      setState(() {
+        feedbacks = response;
+        isLoadingFeedbacks = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoadingFeedbacks = false;
+      });
+      print('Error fetching feedbacks: $error');
+    }
+  }
+
+  Future<void> fetchDishes() async {
+    try {
+      final response = await sendRequest("GET", "food/dishes/");
+      setState(() {
+        dishes = response;
+        isLoadingDishes = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoadingDishes = false;
+      });
+      print('Error fetching dishes: $error');
+    }
+  }
+
+  Map<String, dynamic>? getDishById(int id) {
+    return dishes.firstWhere(
+          (element) => element['id'] == id,
+      orElse: () => null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text('Отзывы'),
+        ),
+        body: isLoadingFeedbacks || isLoadingDishes ? const Center(child: CircularProgressIndicator()) :
+        feedbacks.isEmpty ? const Center(child: Text('Нет отзывов')) :
+        ListView.builder(
+          itemCount: feedbacks.length,
+          itemBuilder: (context, index) {
+            String comment = feedbacks[index]['comment'] ?? "";
+            if (comment.length > 1000) {
+              comment = "${comment.substring(0, 1000)}...";
+            }
+            return ListTile(
+              title: Text(comment),
+              subtitle: Text(
+                'Блюдо: ${getDishById(feedbacks[index]['dish'])?['name']}',
+              ),
+            );
+          },
+        ));
   }
 }
