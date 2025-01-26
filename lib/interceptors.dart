@@ -29,7 +29,8 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioError err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
+    if (err.response?.statusCode == 401 &&
+        err.requestOptions.extra["disableInterceptor"] != true) {
       final refreshToken = await getRefreshToken();
       if (refreshToken != null) {
         try {
@@ -37,6 +38,8 @@ class AuthInterceptor extends Interceptor {
           if (newAccessToken != null) {
             saveAccessToken(newAccessToken);
             final options = err.requestOptions;
+            options.extra["disableInterceptor"] = true; // Чтобы не поймать
+            // рекурсивно проваленный запрос
             options.headers["Authorization"] = "Bearer $newAccessToken";
             final response = await Dio().fetch(options);
             return handler.resolve(response);
@@ -54,7 +57,7 @@ class AuthInterceptor extends Interceptor {
   Future<String?> _refreshToken(String refreshToken) async {
     try {
       final response = await sendRequest('POST', 'token/refresh/',
-          body: {'refresh': refreshToken});
+          body: {'refresh': refreshToken}, disableInterceptor: true);
       if (response != null && response.containsKey('access')) {
         return response['access'];
       }

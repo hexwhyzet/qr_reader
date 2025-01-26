@@ -24,17 +24,32 @@ Future<void> setupDioInterceptors({
 }
 
 Future<dynamic> sendRequest(String method, String endpoint,
-    {Map<String, dynamic>? body, Map<String, dynamic>? queryParams}) async {
+    {Map<String, dynamic>? body,
+    Map<String, dynamic>? queryParams,
+    bool disableInterceptor = false}) async {
   String hostname = await config.hostname.getSetting();
   var url = Uri.parse('http://$hostname/api/$endpoint');
   Response response;
 
+  final options = Options(
+    extra: {"disableInterceptor": disableInterceptor},
+  );
+
   if (method == 'POST') {
-    response = await dio.post(url.toString(), data: body, queryParameters: queryParams).timeout(const Duration(seconds: 5));
+    response = await dio
+        .post(url.toString(),
+            data: body, queryParameters: queryParams, options: options)
+        .timeout(const Duration(seconds: 5));
   } else if (method == 'GET') {
-    response = await dio.get(url.toString(), data: body, queryParameters: queryParams).timeout(const Duration(seconds: 5));
+    response = await dio
+        .get(url.toString(),
+            data: body, queryParameters: queryParams, options: options)
+        .timeout(const Duration(seconds: 5));
   } else if (method == 'DELETE') {
-    response = await dio.delete(url.toString(), data: body, queryParameters: queryParams).timeout(const Duration(seconds: 5));
+    response = await dio
+        .delete(url.toString(),
+            data: body, queryParameters: queryParams, options: options)
+        .timeout(const Duration(seconds: 5));
   } else {
     throw Error();
   }

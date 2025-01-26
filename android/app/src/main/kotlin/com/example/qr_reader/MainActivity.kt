@@ -1,4 +1,4 @@
-package com.sostra.qr_reader.android
+package com.sostra.qr_reader
 
 import io.flutter.embedding.android.FlutterActivity
 

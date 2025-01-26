@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:qr_reader/appbar.dart';
 import 'package:qr_reader/qr_mini_app.dart';
@@ -51,7 +53,7 @@ class _MenuScreenState extends State<MenuScreen> {
       if (response != null &&
           response.containsKey('success') &&
           response['success']) {
-        if (response['groups'].contains('QR Guard') &&
+        if (response['groups'].contains('qr_guard') &&
             response['extra'].containsKey('guard_id')) {
           await config.code
               .setSetting(response['extra']['guard_id'].toString());
