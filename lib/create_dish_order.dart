@@ -16,6 +16,8 @@ class CreateDishOrderView extends StatefulWidget {
 
 class _CreateDishOrderState extends State<CreateDishOrderView> {
   late List<dynamic> dishes;
+  List<dynamic> menu = [];
+  bool isLoading = true;
   List<int> selectedDishes = [];
   final DateTime firstDate = DateTime.now().add(const Duration(days: 1));
   final DateTime lastDate = DateTime.now().add(const Duration(days: 7));
@@ -33,7 +35,26 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
+        selectedDishes = [];
+        isLoading = true;
       });
+      loadMenu();
+    }
+  }
+
+  Future<void> loadMenu() async {
+    try {
+      final date = DateFormat('yyyy-MM-dd').format(selectedDate);
+      final response = await sendRequest("GET", "food/allowed_dishes/");
+      setState(() {
+        menu = response.where((item) => item['date'] == date).toList();
+        isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+      print('Error fetching menu: $error');
     }
   }
 
@@ -41,13 +62,16 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
   void initState() {
     super.initState();
     dishes = widget.dishes;
+    loadMenu();
   }
 
   List<dynamic> get filteredDishes {
+    final menuDishIds = menu.map((item) => item['dish']).toSet();
+
     if (selectedCategory == null || selectedCategory!.isEmpty) {
-      return dishes;
+      return dishes.where((dish) => menuDishIds.contains(dish['id'])).toList();
     }
-    return dishes.where((dish) => dish['category'] == selectedCategory).toList();
+    return dishes.where((dish) => dish['category'] == selectedCategory && menuDishIds.contains(dish['id'])).toList();
   }
 
   @override
@@ -56,7 +80,9 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
       appBar: AppBar(
         title: const Text('Создание заказа'),
       ),
-      body: Padding(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: CustomScrollView(
           slivers: [
