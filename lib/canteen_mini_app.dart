@@ -3,7 +3,7 @@ import 'package:qr_reader/create_dish_order.dart';
 import 'package:qr_reader/request.dart';
 
 import 'alert.dart';
-import 'order_detail_view.dart';
+import 'canteen_manager_mini_app.dart';
 
 String getOrderStatusName(String? statusCode) {
   switch (statusCode?.toLowerCase()) {
@@ -35,14 +35,57 @@ String getDishTypeName(String? dishType) {
   }
 }
 
-class CanteenMiniApp extends StatefulWidget {
+class CanteenMiniApp extends StatelessWidget {
   const CanteenMiniApp({super.key});
 
   @override
-  State<CanteenMiniApp> createState() => _CanteenMiniAppState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Столовая'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CanteenOrdersMiniApp(),
+                  ),
+                );
+              },
+              child: const Text('Просмотр заказов'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FeedbacksPage(),
+                  ),
+                );
+              },
+              child: const Text('Просмотр отзывов'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _CanteenMiniAppState extends State<CanteenMiniApp> {
+class CanteenOrdersMiniApp extends StatefulWidget {
+  const CanteenOrdersMiniApp({super.key});
+
+  @override
+  State<CanteenOrdersMiniApp> createState() => _CanteenOrdersMiniAppState();
+}
+
+class _CanteenOrdersMiniAppState extends State<CanteenOrdersMiniApp> {
   List<dynamic> dishes = [];
   List<dynamic> orders = [];
   bool isLoadingDishes = true;
