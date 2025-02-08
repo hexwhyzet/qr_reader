@@ -5,21 +5,6 @@ import 'package:qr_reader/request.dart';
 import 'alert.dart';
 import 'canteen_manager_mini_app.dart';
 
-String getOrderStatusName(String? statusCode) {
-  switch (statusCode?.toLowerCase()) {
-    case 'pending':
-      return 'Ожидает';
-    case 'approved':
-      return 'Одобрен';
-    case 'canceled':
-      return 'Отменён';
-    case 'completed':
-      return 'Завершён';
-    default:
-      return 'Неизвестный статус';
-  }
-}
-
 String getDishTypeName(String? dishType) {
   switch (dishType?.toLowerCase()) {
     case 'first_course':
@@ -208,7 +193,9 @@ class _CanteenOrdersMiniAppState extends State<CanteenOrdersMiniApp> {
           MaterialPageRoute(
             builder: (context) => CreateDishOrderView(dishes: dishes),
           ),
-        ),
+        ).then((result) {
+          refreshState();
+        }),
         child: const Icon(Icons.add),
       ),
     );
@@ -280,11 +267,9 @@ class OrdersForDayView extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 final comment = commentController.text.trim();
+                Navigator.pop(context);
+                Navigator.pop(context);
                 await deleteOrder(context, order, comment);
-                if (context.mounted && Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                }
               },
               child: const Text('Удалить', style: TextStyle(color: Colors.red)),
             ),
@@ -315,14 +300,96 @@ class OrdersForDayView extends StatelessWidget {
             )
                 : const SizedBox(width: 50, height: 50, child: Icon(Icons.fastfood)),
             title: Text(dish?['name'] ?? 'Неизвестное блюдо'),
-            subtitle: Text('Статус: ${getOrderStatusName(order['status'])}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => showDeleteConfirmationDialog(context, order),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.feedback, color: Colors.blue),
+                  onPressed: () => showReviewDialog(context, order['dish']),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => showDeleteConfirmationDialog(context, order),
+                ),
+              ],
             ),
           );
         },
       ),
     );
   }
+}
+
+Future<void> showReviewDialog(BuildContext context, int dishId) async {
+  final TextEditingController reviewController = TextEditingController();
+  bool isSubmitting = false;
+
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Оставить отзыв на блюдо'),
+            content: TextField(
+              controller: reviewController,
+              decoration: const InputDecoration(hintText: 'Напишите свой отзыв здесь...'),
+              maxLines: 4,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  if (isSubmitting) return;
+                  Navigator.pop(context);
+                },
+                child: const Text('Отменить'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (isSubmitting) return;
+                  setState(() {
+                    isSubmitting = true;
+                  });
+
+                  final review = reviewController.text;
+                  if (review.isEmpty) {
+                    await raiseErrorFlushbar(context, "Введите текст отзыва");
+                    setState(() {
+                      isSubmitting = false;
+                    });
+                    return;
+                  }
+
+                  var dict = {
+                    "dish": dishId,
+                    "comment": review,
+                  };
+
+                  try {
+                    await sendRequest("POST", "food/feedback/", body: dict);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      await raiseSuccessFlushbar(context, "Отзыв успешно отправлен!");
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      await raiseErrorFlushbar(context, "Ошибка отправки отзыва!");
+                    }
+                  }
+
+                  if (context.mounted) {
+                    setState(() {
+                      isSubmitting = false;
+                    });
+                  }
+                },
+                child: const Text('Отправить'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
