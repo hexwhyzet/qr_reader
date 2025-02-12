@@ -40,6 +40,18 @@ class CanteenManagerMiniApp extends StatelessWidget {
               },
               child: const Text('Просмотр отзывов'),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RemovedOrdersPage(),
+                  ),
+                );
+              },
+              child: const Text('Просмотр удалённых заказов'),
+            ),
           ],
         ),
       ),
@@ -233,6 +245,91 @@ class _FeedbacksPageState extends State<FeedbacksPage> {
               title: Text(comment),
               subtitle: Text(
                 'Блюдо: ${getDishById(feedbacks[index]['dish'])?['name']}',
+              ),
+            );
+          },
+        ));
+  }
+}
+
+class RemovedOrdersPage extends StatefulWidget {
+  const RemovedOrdersPage({super.key});
+
+  @override
+  State<RemovedOrdersPage> createState() => _RemovedOrdersPageState();
+}
+
+class _RemovedOrdersPageState extends State<RemovedOrdersPage> {
+  List<dynamic> orders = [];
+  List<dynamic> dishes = [];
+  bool isLoadingRemovedOrders = true;
+  bool isLoadingDishes = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOrders();
+    fetchDishes();
+  }
+
+  Future<void> fetchOrders() async {
+    try {
+      final response = await sendRequest("GET", "food/removed_orders/");
+      setState(() {
+        orders = response;
+        isLoadingRemovedOrders = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoadingRemovedOrders = false;
+      });
+      print('Error fetching removed orders: $error');
+    }
+  }
+
+  Future<void> fetchDishes() async {
+    try {
+      final response = await sendRequest("GET", "food/dishes/");
+      setState(() {
+        dishes = response;
+        isLoadingDishes = false;
+      });
+    } catch (error) {
+      setState(() {
+        isLoadingDishes = false;
+      });
+      print('Error fetching dishes: $error');
+    }
+  }
+
+  Map<String, dynamic>? getDishById(int id) {
+    return dishes.firstWhere(
+          (element) => element['id'] == id,
+      orElse: () => null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text('Удалённые заказы'),
+        ),
+        body: isLoadingRemovedOrders || isLoadingDishes ? const Center(child: CircularProgressIndicator()) :
+        orders.isEmpty ? const Center(child: Text('Нет удалённых заказов')) :
+        ListView.builder(
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            String comment = orders[index]['comment'] ?? "";
+            if (comment.length > 1000) {
+              comment = "${comment.substring(0, 1000)}...";
+            }
+            return ListTile(
+              title: Text(
+                'Блюдо: ${getDishById(orders[index]['dish'])?['name']}'),
+              subtitle: Text(
+                'Причина: ${orders[index]["deletion_reason"]??""}\n'
+                    'Дата: ${orders[index]["cooking_time"]??""}\n',
               ),
             );
           },
