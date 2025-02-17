@@ -5,6 +5,9 @@ import 'package:qr_reader/request.dart';
 import 'alert.dart';
 import 'canteen_manager_mini_app.dart';
 
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
 String getDishTypeName(String? dishType) {
   switch (dishType?.toLowerCase()) {
     case 'first_course':
@@ -322,6 +325,8 @@ class OrdersForDayView extends StatelessWidget {
 
 Future<void> showReviewDialog(BuildContext context, int dishId) async {
   final TextEditingController reviewController = TextEditingController();
+  final ImagePicker picker = ImagePicker();
+  XFile? pickedImage;
   bool isSubmitting = false;
 
   await showDialog(
@@ -331,10 +336,31 @@ Future<void> showReviewDialog(BuildContext context, int dishId) async {
         builder: (context, setState) {
           return AlertDialog(
             title: const Text('Оставить отзыв на блюдо'),
-            content: TextField(
-              controller: reviewController,
-              decoration: const InputDecoration(hintText: 'Напишите свой отзыв здесь...'),
-              maxLines: 4,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: reviewController,
+                  decoration: const InputDecoration(hintText: 'Напишите свой отзыв здесь...'),
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 10),
+                pickedImage != null
+                    ? Image.file(File(pickedImage!.path), height: 100)
+                    : const SizedBox(),
+                TextButton.icon(
+                  onPressed: () async {
+                    final image = await picker.pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      setState(() {
+                        pickedImage = image;
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.photo),
+                  label: const Text("Добавить фото"),
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -361,19 +387,26 @@ Future<void> showReviewDialog(BuildContext context, int dishId) async {
                   }
 
                   var dict = {
-                    "dish": dishId,
+                    "dish": dishId.toString(),
                     "comment": review,
                   };
 
                   try {
-                    await sendRequest("POST", "food/feedback/", body: dict);
+                    await sendRequest(
+                      "POST",
+                      "food/feedback/",
+                      body: {
+                        "dish": dishId.toString(),
+                        "comment": review,
+                        "photo": pickedImage?.path,
+                      },
+                    );
                     if (context.mounted) {
                       Navigator.pop(context);
                       await raiseSuccessFlushbar(context, "Отзыв успешно отправлен!");
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      Navigator.pop(context);
                       await raiseErrorFlushbar(context, "Ошибка отправки отзыва!");
                     }
                   }

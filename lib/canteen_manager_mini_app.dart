@@ -229,26 +229,60 @@ class _FeedbacksPageState extends State<FeedbacksPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Отзывы'),
-        ),
-        body: isLoadingFeedbacks || isLoadingDishes ? const Center(child: CircularProgressIndicator()) :
-        feedbacks.isEmpty ? const Center(child: Text('Нет отзывов')) :
-        ListView.builder(
-          itemCount: feedbacks.length,
-          itemBuilder: (context, index) {
-            String comment = feedbacks[index]['comment'] ?? "";
-            if (comment.length > 1000) {
-              comment = "${comment.substring(0, 1000)}...";
-            }
-            return ListTile(
-              title: Text(comment),
-              subtitle: Text(
-                'Блюдо: ${getDishById(feedbacks[index]['dish'])?['name']}',
+      appBar: AppBar(title: const Text('Отзывы')),
+      body: isLoadingFeedbacks || isLoadingDishes
+          ? const Center(child: CircularProgressIndicator())
+          : feedbacks.isEmpty
+          ? const Center(child: Text('Нет отзывов'))
+          : ListView.builder(
+        itemCount: feedbacks.length,
+        itemBuilder: (context, index) {
+          var feedback = feedbacks[index];
+
+          String comment = feedback['comment'] ?? "";
+          if (comment.length > 1000) {
+            comment = "${comment.substring(0, 1000)}...";
+          }
+
+          String dishName = getDishById(feedback['dish'])?['name'] ?? "Неизвестное блюдо";
+
+          String formattedDate = "";
+          if (feedback['created_at'] != null) {
+            DateTime createdAt = DateTime.parse(feedback['created_at']);
+            formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(createdAt);
+          }
+
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(comment, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text('Блюдо: $dishName', style: TextStyle(color: Colors.grey[700])),
+                  Text('Дата: $formattedDate', style: TextStyle(color: Colors.grey[700])),
+                  const SizedBox(height: 8),
+                  if (feedback['photo'] != null && feedback['photo'].isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        feedback['photo'],
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+                      ),
+                    ),
+                ],
               ),
-            );
-          },
-        ));
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

@@ -35,6 +35,22 @@ Future<dynamic> sendRequest(String method, String endpoint,
     extra: {"disableInterceptor": disableInterceptor},
   );
 
+  bool hasFile = body != null && body.containsKey("photo") && body["photo"] is String;
+
+  if (hasFile) {
+    var formData = FormData.fromMap(body!);
+    String filePath = body["photo"];
+    formData.files.add(MapEntry(
+      "photo",
+      await MultipartFile.fromFile(filePath, filename: filePath.split("/").last),
+    ));
+    response = await dio
+        .post(url.toString(),
+        data: formData, queryParameters: queryParams, options: options)
+        .timeout(const Duration(seconds: 5));
+    return response.data;
+  }
+
   if (method == 'POST') {
     response = await dio
         .post(url.toString(),
