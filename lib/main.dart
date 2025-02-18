@@ -1,7 +1,10 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_reader/services/notification_service.dart';
 
+import 'firebase_options.dart';
 import 'login.dart';
 
 const primaryColor = Color(0xFF006940);
@@ -16,6 +19,12 @@ void main() async {
       statusBarBrightness: Brightness.light,
     ),
   );
+
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await NotificationService.instance.initialize();
 
   runApp(MyApp());
 }

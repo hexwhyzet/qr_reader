@@ -1,5 +1,8 @@
 plugins {
     id "com.android.application"
+    // START: FlutterFire Configuration
+    id 'com.google.gms.google-services'
+    // END: FlutterFire Configuration
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -33,7 +36,13 @@ android {
     compileSdk flutter.compileSdkVersion
     ndkVersion "27.0.12077973"
 
+    defaultConfig {
+        multiDexEnabled true
+    }
+
     compileOptions {
+        coreLibraryDesugaringEnabled true
+
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -86,4 +95,5 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
         because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
     }
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
 }

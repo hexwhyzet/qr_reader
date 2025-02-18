@@ -1,13 +1,16 @@
 import 'dart:developer';
 
+import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_reader/appbar.dart';
 import 'package:qr_reader/qr_mini_app.dart';
 import 'package:qr_reader/request.dart';
+import 'package:qr_reader/services/notification_service.dart';
 import 'package:qr_reader/settings.dart';
 
 import 'canteen_manager_mini_app.dart';
 import 'canteen_mini_app.dart';
+import 'dispatch_mini_app.dart';
 
 class _IconInfo {
   final IconData icon;
@@ -48,6 +51,7 @@ class _MenuScreenState extends State<MenuScreen> {
     bool isQrServiceAvailable = false;
     bool isCanteenServiceAvailable = false;
     bool isCanteenManagerAvailable = false;
+    bool isDispatchAvailable = true;
 
     try {
       if (response != null &&
@@ -70,6 +74,14 @@ class _MenuScreenState extends State<MenuScreen> {
       print("Failed to parse whoiam request: $e");
     }
 
+    if (response != null) {
+      config.userId.setSetting(response['id'].toString());
+    }
+
+    if (NotificationService.instance.token != null) {
+      sendRequest('POST', 'register_notification_token', body: {'notification_token': NotificationService.instance.token});
+    }
+
     _iconInfo = [
       _IconInfo(
           icon: Icons.fastfood,
@@ -86,6 +98,11 @@ class _MenuScreenState extends State<MenuScreen> {
           title: 'Обход',
           isAvailable: isQrServiceAvailable,
           screen: QRMiniApp()),
+      _IconInfo(
+          icon: Icons.warning_amber_outlined,
+          title: 'Диспетчеризация',
+          isAvailable: isDispatchAvailable,
+          screen: IncidentMiniApp()),
     ];
   }
 
@@ -140,24 +157,34 @@ class IconGrid extends StatelessWidget {
         final info = iconInfo[index];
         return GestureDetector(
           onTap: () => _onIconPressed(context, info),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                info.icon,
-                size: 48.0,
-                color: info.isAvailable ? Colors.green : Colors.grey,
-              ),
-              SizedBox(height: 8.0),
-              Text(info.title, textAlign: TextAlign.center,),
-              Text(
-                info.isAvailable ? 'Доступно' : 'Недоступно',
-                style: TextStyle(
+          child: Padding(
+            padding: EdgeInsets.all(5),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  info.icon,
+                  size: 48.0,
                   color: info.isAvailable ? Colors.green : Colors.grey,
-                  fontSize: 12.0,
                 ),
-              ),
-            ],
+                SizedBox(height: 8.0),
+                AutoSizeText(
+                  info.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  wrapWords: false,
+                ),
+                Expanded(
+                  child: AutoSizeText(
+                    info.isAvailable ? 'Доступно' : 'Недоступно',
+                    style: TextStyle(
+                      color: info.isAvailable ? Colors.green : Colors.grey,
+                    ),
+                    maxLines: 2,
+                  ),
+                )
+              ],
+            ),
           ),
         );
       },

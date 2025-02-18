@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:qr_reader/botton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -59,6 +60,7 @@ class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
       settingKey: 'hostname', defaultValue: '10.0.2.2:8000');
+  SettingAccessor userId = SettingAccessor(settingKey: 'userId');
 }
 
 final config = Config();
@@ -74,11 +76,24 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   TextEditingController _controller = TextEditingController();
+  String appVersion = "";
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    String version = packageInfo.version;
+    String buildNumber = packageInfo.buildNumber;
+    print(version);
+    print(buildNumber);
+    setState(() {
+      appVersion = "$version ($buildNumber)";
+    });
   }
 
   void _loadSettings() async {
@@ -124,13 +139,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 textWidth: 0.5,
               ),
               Spacer(flex: 1),
+              Text(
+                "Версия приложения: $appVersion",
+              ),
               if (widget.logoutCallback != null)
-                StyledWideButton(
-                  text: "Выйти из аккаунта",
-                  onPressed: _logout,
-                  bg: Colors.red,
-                  fg: Colors.white,
-                  height: 50,
+                Column(
+                  children: [
+                    SizedBox(height: 10),
+                    StyledWideButton(
+                      text: "Выйти из аккаунта",
+                      onPressed: _logout,
+                      bg: Colors.red,
+                      fg: Colors.white,
+                      height: 50,
+                    ),
+                  ],
                 )
             ],
           ),

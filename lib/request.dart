@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qr_reader/settings.dart';
 
 import 'interceptors.dart';
@@ -23,23 +25,37 @@ Future<void> setupDioInterceptors({
   ));
 }
 
-Future<dynamic> sendRequest(String method, String endpoint,
+Future<Response> sendRequestWithStatus(String method, String endpoint,
     {Map<String, dynamic>? body,
     Map<String, dynamic>? queryParams,
-    bool disableInterceptor = false}) async {
+    bool disableInterceptor = false,
+    bool isMultipart = false}) async {
   String hostname = await config.hostname.getSetting();
   var url = Uri.parse('http://$hostname/api/$endpoint');
   Response response;
 
-  final options = Options(
+  var options = Options(
     extra: {"disableInterceptor": disableInterceptor},
   );
 
+  if (isMultipart) {
+    options.headers = {"Content-Type": "multipart/form-data"};
+  }
+
   if (method == 'POST') {
-    response = await dio
-        .post(url.toString(),
-            data: body, queryParameters: queryParams, options: options)
-        .timeout(const Duration(seconds: 5));
+    if (isMultipart) {
+      response = await dio
+          .post(url.toString(),
+              data: FormData.fromMap(body!),
+              queryParameters: queryParams,
+              options: options)
+          .timeout(const Duration(seconds: 5));
+    } else {
+      response = await dio
+          .post(url.toString(),
+              data: body, queryParameters: queryParams, options: options)
+          .timeout(const Duration(seconds: 5));
+    }
   } else if (method == 'GET') {
     response = await dio
         .get(url.toString(),
@@ -57,5 +73,31 @@ Future<dynamic> sendRequest(String method, String endpoint,
   if (response.statusCode != 200) {
     print('Server error: ${response.data}');
   }
-  return response.data;
+  return response;
+}
+
+Future<dynamic> sendFileWithMultipart(
+    String method, String endpoint, XFile file, String fileKey,
+    {Map<String, dynamic>? body,
+    Map<String, dynamic>? queryParams,
+    bool disableInterceptor = false}) async {
+  body ??= {};
+  body[fileKey] = await MultipartFile.fromFile(file.path,
+      filename: file.path.split('/').last);
+  return sendRequestWithStatus(method, endpoint,
+      body: body,
+      queryParams: queryParams,
+      disableInterceptor: disableInterceptor,
+      isMultipart: true);
+}
+
+Future<dynamic> sendRequest(String method, String endpoint,
+    {Map<String, dynamic>? body,
+    Map<String, dynamic>? queryParams,
+    bool disableInterceptor = false}) async {
+  return (await sendRequestWithStatus(method, endpoint,
+          body: body,
+          queryParams: queryParams,
+          disableInterceptor: disableInterceptor))
+      .data;
 }
