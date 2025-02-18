@@ -392,15 +392,28 @@ Future<void> showReviewDialog(BuildContext context, int dishId) async {
                   };
 
                   try {
-                    await sendRequest(
-                      "POST",
-                      "food/feedback/",
-                      body: {
-                        "dish": dishId.toString(),
-                        "comment": review,
-                        "photo": pickedImage?.path,
-                      },
-                    );
+                    if (pickedImage == null) {
+                      await sendRequest(
+                        "POST",
+                        "food/feedback/",
+                        body: {
+                          "dish": dishId.toString(),
+                          "comment": review,
+                          "photo": null,
+                        },
+                      );
+                    } else {
+                      await sendFileWithMultipart(
+                        "POST",
+                        "food/feedback/",
+                        pickedImage!,
+                        "photo",
+                        body: {
+                          "dish": dishId.toString(),
+                          "comment": review,
+                        },
+                      );
+                    }
                     if (context.mounted) {
                       Navigator.pop(context);
                       await raiseSuccessFlushbar(context, "Отзыв успешно отправлен!");
