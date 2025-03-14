@@ -111,6 +111,8 @@ class _IncidentCreationScreenState extends State<IncidentCreationScreen> {
       },
     );
 
+    print(response.statusCode);
+
     if (response.statusCode == 201) {
       Navigator.pop(context);
     } else {
@@ -281,12 +283,13 @@ class _IncidentListState extends State<IncidentList> {
       ),
       body: ListView(
         children: [
-          buildSection('Ваши текущие дежурства', responsibleIncidents),
+          if (duties.isNotEmpty)
+            buildSection('Ваши текущие дежурства', []),
           ...duties.map((duty) => buildDutyTile(duty)).toList(),
           if (responsibleIncidents.isNotEmpty)
-            buildSection('Вы ответственный за инциденты', responsibleIncidents),
+            buildSection('Вы ответственный за инцидент:', responsibleIncidents),
           if (authorIncidents.isNotEmpty)
-            buildSection('Вы автор инцидентов', authorIncidents),
+            buildSection('Вы автор инцидента:', authorIncidents),
           if (otherIncidents.isNotEmpty)
             buildSection('Остальные инциденты', otherIncidents),
         ],
@@ -329,6 +332,7 @@ class IncidentTile extends StatelessWidget {
                 builder: (context) =>
                     IncidentDetailScreen(incidentId: incident.id)),
           );
+
         },
       ),
     );

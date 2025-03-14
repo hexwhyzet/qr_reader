@@ -8,6 +8,8 @@ class Duty {
   final String date;
   final User user;
   final DutyRole role;
+  final DateTime start;
+  final DateTime end;
   final bool isOpened;
 
   Duty({
@@ -15,6 +17,8 @@ class Duty {
     required this.date,
     required this.user,
     required this.role,
+    required this.start,
+    required this.end,
     required this.isOpened,
   });
 
@@ -24,6 +28,8 @@ class Duty {
       date: json['date'],
       user: User.fromJson(json['user']),
       role: DutyRole.fromJson(json['role']),
+      start: DateTime.parse(json['start_datetime']),
+      end: DateTime.parse(json['end_datetime']),
       isOpened: json['is_opened'],
     );
   }

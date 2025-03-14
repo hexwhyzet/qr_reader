@@ -59,7 +59,7 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '10.0.2.2:8000');
+      settingKey: 'hostname', defaultValue: '130.193.44.171:8000');
   SettingAccessor userId = SettingAccessor(settingKey: 'userId');
 }
 
