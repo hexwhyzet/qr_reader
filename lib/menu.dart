@@ -1,7 +1,7 @@
-import 'dart:developer';
-
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_reader/alert.dart';
 import 'package:qr_reader/appbar.dart';
 import 'package:qr_reader/qr_mini_app.dart';
 import 'package:qr_reader/request.dart';
@@ -23,6 +23,86 @@ class _IconInfo {
       required this.title,
       required this.isAvailable,
       required this.screen});
+}
+
+class ChangePasswordScreen extends StatelessWidget {
+  final oldPasswordController = TextEditingController();
+  final newPasswordController = TextEditingController();
+
+  ChangePasswordScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('Необходимо сменить пароль'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: oldPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Старый пароль',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Новый пароль',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () async {
+                  final oldPass = oldPasswordController.text;
+                  final newPass = newPasswordController.text;
+
+                  if (oldPass.isEmpty || newPass.isEmpty) {
+                    raiseErrorFlushbar(context, "Заполните оба поля");
+                    return;
+                  }
+
+                  try {
+                    Map<String, dynamic>? response = await sendRequest(
+                        'POST', 'auth/change_password/', body: {
+                      'old_password': oldPass,
+                      'new_password': newPass
+                    });
+
+
+                  } on DioException catch (e) {
+                    print(e.error);
+                    print(e.message);
+                    print(e.response);
+                    if (e.response?.data["error"] != null) {
+                      raiseErrorFlushbar(context, e.response?.data["error"]);
+                    } else if (e.response?.data["old_password"] != null) {
+                      raiseErrorFlushbar(context, "Старый пароль неправильный");
+                    }
+                  }
+
+                  Navigator.pop(context);
+                  raiseSuccessFlushbar(context, "Пароль изменён");
+                },
+                child: const Text('Сменить пароль'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MenuScreen extends StatefulWidget {
@@ -54,6 +134,13 @@ class _MenuScreenState extends State<MenuScreen> {
     bool isDispatchAvailable = true;
 
     try {
+      if (response != null && response['must_change_password']) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChangePasswordScreen()),
+        );
+      }
+
       if (response != null &&
           response.containsKey('success') &&
           response['success']) {
@@ -79,7 +166,8 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     if (NotificationService.instance.token != null) {
-      sendRequest('POST', 'register_notification_token', body: {'notification_token': NotificationService.instance.token});
+      sendRequest('POST', 'register_notification_token',
+          body: {'notification_token': NotificationService.instance.token});
     }
 
     _iconInfo = [

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -5,12 +7,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:insta_image_viewer/insta_image_viewer.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_reader/alert.dart';
 import 'package:qr_reader/data/dispatch/duty_point.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 import 'package:qr_reader/visits.dart';
 import 'package:video_player/video_player.dart';
 
+import 'data/common/user.dart';
 import 'data/dispatch/duty.dart';
 import 'data/dispatch/incident.dart';
 import 'data/dispatch/incident_message.dart';
@@ -172,6 +176,106 @@ class _IncidentCreationScreenState extends State<IncidentCreationScreen> {
   }
 }
 
+class TransferDutyScreen extends StatefulWidget {
+  final int dutyId;
+
+  const TransferDutyScreen({super.key, required this.dutyId});
+
+  @override
+  State<TransferDutyScreen> createState() => _TransferDutyScreenState();
+}
+
+class _TransferDutyScreenState extends State<TransferDutyScreen> {
+  List<User> _users = [];
+  User? _selectedUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    try {
+      List<dynamic> response = await sendRequest('GET', 'users/');
+
+      setState(() {
+        _users = User.fromJsonList(response);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      raiseErrorFlushbar(context, 'Не удалось загрузить пользователей');
+    }
+  }
+
+  void _transferDuty() async {
+    if (_selectedUser == null) {
+      raiseErrorFlushbar(context, "Выберите пользователя");
+      return;
+    }
+
+    final int userId = _selectedUser!.id;
+    final int dutyId = widget.dutyId;
+
+    try {
+      Map<String, dynamic>? response = await sendRequest(
+          'POST', 'dispatch/duties/$dutyId/transfer_duty/',
+          body: {'user_id': userId});
+    } catch (e) {
+      raiseErrorFlushbar(context, 'Не удалось передать дежурство');
+      return;
+    }
+
+    Navigator.pop(context);
+    raiseSuccessFlushbar(context, "Дежурство передано");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Передать дежурство')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButtonFormField<User>(
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Выберите пользователя',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _users.map((user) {
+                      return DropdownMenuItem(
+                        value: user,
+                        child: Text(user.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedUser = value;
+                      });
+                    },
+                    value: _selectedUser,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _transferDuty,
+                    child: const Text('Передать дежурство'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
 class IncidentList extends StatefulWidget {
   @override
   _IncidentListState createState() => _IncidentListState();
@@ -233,15 +337,46 @@ class _IncidentListState extends State<IncidentList> {
   Widget buildDutyTile(Duty duty) {
     return ListTile(
       title: Text(duty.role.name),
-      trailing: ElevatedButton(
-        onPressed: duty.isOpened ? null : () => openDuty(duty.id),
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              duty.isOpened ? Colors.white : Theme.of(context).primaryColor,
-          foregroundColor:
-              duty.isOpened ? Theme.of(context).primaryColor : Colors.white,
+      trailing: SizedBox(
+        width: 200,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            ElevatedButton(
+              onPressed: duty.isOpened ? null : () => openDuty(duty.id),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: duty.isOpened
+                    ? Colors.white
+                    : Theme.of(context).primaryColor,
+                foregroundColor: duty.isOpened
+                    ? Theme.of(context).primaryColor
+                    : Colors.white,
+              ),
+              child: Text(duty.isOpened ? 'Открыто' : 'Открыть'),
+            ),
+            if (!duty.isOpened)
+              Padding(
+                padding: EdgeInsets.only(left: 15),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: EdgeInsets.zero,
+                    backgroundColor: Colors.red,
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              TransferDutyScreen(dutyId: duty.id)),
+                    );
+                    fetchDuties();
+                  },
+                  child: Icon(Icons.close, size: 35, color: Colors.white),
+                ),
+              )
+          ],
         ),
-        child: Text(duty.isOpened ? 'Открыто' : 'Открыть'),
       ),
     );
   }
@@ -283,8 +418,7 @@ class _IncidentListState extends State<IncidentList> {
       ),
       body: ListView(
         children: [
-          if (duties.isNotEmpty)
-            buildSection('Ваши текущие дежурства', []),
+          if (duties.isNotEmpty) buildSection('Ваши текущие дежурства', []),
           ...duties.map((duty) => buildDutyTile(duty)).toList(),
           if (responsibleIncidents.isNotEmpty)
             buildSection('Вы ответственный за инцидент:', responsibleIncidents),
@@ -332,7 +466,6 @@ class IncidentTile extends StatelessWidget {
                 builder: (context) =>
                     IncidentDetailScreen(incidentId: incident.id)),
           );
-
         },
       ),
     );
@@ -431,12 +564,13 @@ class IncidentDetailScreen extends StatefulWidget {
   _IncidentDetailScreenState createState() => _IncidentDetailScreenState();
 }
 
-class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
+class _IncidentDetailScreenState extends State<IncidentDetailScreen> with WidgetsBindingObserver {
   bool _isDescriptionVisible = false;
   Incident? _incident;
   List<IncidentMessage> _messages = [];
   int _currentPage = 1;
   bool _isLoadingMessages = false;
+  Timer? _timer;
 
   // bool _hasMoreMessages = true;
   bool _hasMoreMessages = false;
@@ -447,6 +581,17 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   void initState() {
     super.initState();
     fetchAll();
+    WidgetsBinding.instance.addObserver(this);
+    _startUpdating();
+  }
+
+  void _startUpdating() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (ModalRoute.of(context)?.isCurrent ?? true) {
+        fetchMessages();
+      }
+    });
   }
 
   Future<void> fetchAll() async {
@@ -469,6 +614,13 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     setState(() {
       _incident = Incident.fromJson(incidentResponse);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
   }
 
   // Future<void> fetchLatestMessages() async {
@@ -556,8 +708,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   }
 
   Widget _buildMessage(IncidentMessage message, {bool isSystem = false}) {
-    print(message.type);
-    print(message.contentObject.toJson());
     switch (message.type) {
       case 'photo':
         return InstaImageViewer(
@@ -718,7 +868,9 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   value: "Открыть",
                   child: Text("Открыть"),
                   onTap: () async {
-                    await sendRequest("POST", "dispatch/incidents/${widget.incidentId}/change_status/", body: {"status": "opened"});
+                    await sendRequest("POST",
+                        "dispatch/incidents/${widget.incidentId}/change_status/",
+                        body: {"status": "opened"});
                     fetchAll();
                   },
                 ),
@@ -727,7 +879,9 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   value: "Закрыть",
                   child: Text("Закрыть"),
                   onTap: () async {
-                    await sendRequest("POST", "dispatch/incidents/${widget.incidentId}/change_status/", body: {"status": "closed"});
+                    await sendRequest("POST",
+                        "dispatch/incidents/${widget.incidentId}/change_status/",
+                        body: {"status": "closed"});
                     fetchAll();
                   },
                 ),
@@ -736,7 +890,9 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   value: "Ненадлежащее выполнение",
                   child: Text("Ненадлежащее выполнение"),
                   onTap: () async {
-                    await sendRequest("POST", "dispatch/incidents/${widget.incidentId}/change_status/", body: {"status": "force_closed"});
+                    await sendRequest("POST",
+                        "dispatch/incidents/${widget.incidentId}/change_status/",
+                        body: {"status": "force_closed"});
                     fetchAll();
                   },
                 ),
@@ -745,7 +901,8 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   value: "Эскалировать",
                   child: Text("Эскалировать"),
                   onTap: () async {
-                    await sendRequest("POST", "dispatch/incidents/${widget.incidentId}/escalate/");
+                    await sendRequest("POST",
+                        "dispatch/incidents/${widget.incidentId}/escalate/");
                     fetchAll();
                   },
                 ),

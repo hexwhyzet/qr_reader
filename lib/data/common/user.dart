@@ -35,8 +35,7 @@ class User {
     };
   }
 
-  static List<User> fromJsonList(String jsonString) {
-    final List<dynamic> jsonList = json.decode(jsonString);
+  static List<User> fromJsonList(List<dynamic> jsonList) {
     return jsonList.map((json) => User.fromJson(json)).toList();
   }
 }
