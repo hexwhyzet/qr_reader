@@ -31,7 +31,7 @@ Future<Response> sendRequestWithStatus(String method, String endpoint,
     bool disableInterceptor = false,
     bool isMultipart = false}) async {
   String hostname = await config.hostname.getSetting();
-  var url = Uri.parse('http://$hostname/api/$endpoint');
+  var url = Uri.parse('https://$hostname/api/$endpoint');
   Response response;
 
   var options = Options(

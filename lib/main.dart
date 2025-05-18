@@ -30,9 +30,8 @@ void main() async {
     badge: true,
     sound: true,
   );
-  await NotificationService.instance.initialize();
 
-  runApp(MyApp());
+  runApp(FirebasePermissionGate());
 }
 
 class MyApp extends StatelessWidget {

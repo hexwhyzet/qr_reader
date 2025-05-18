@@ -1,120 +1,71 @@
-import 'dart:async';
-
+import 'dart:html' as html;                  // for Notification API
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await NotificationService.instance.setupFlutterNotifications();
-  await NotificationService.instance.showNotification(message);
+import '../main.dart';
+import '../request.dart';
+
+class FirebasePermissionGate extends StatefulWidget {
+  @override
+  _FirebasePermissionGateState createState() => _FirebasePermissionGateState();
 }
 
-class NotificationService {
-  NotificationService._();
-
-  static final NotificationService instance = NotificationService._();
-
+class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
+  bool _initialized = false;
+  bool _granted = false;
+  String? _error;
   final _messaging = FirebaseMessaging.instance;
-  final _localNotifications = FlutterLocalNotificationsPlugin();
-  bool _isFlutterLocalNotificationsInitialized = false;
-  String? token;
 
-  Future<void> initialize() async {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Request permission
-    await _requestPermission();
-
-    // Setup message handlers
-    await _setupMessageHandlers();
-
-    // Get FCM token
-    token = await _messaging.getToken();
-    print('FCM Token: $token');
+  @override
+  void initState() {
+    super.initState();
+    _init();
   }
 
-  Future<void> _requestPermission() async {
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-      announcement: false,
-      carPlay: false,
-      criticalAlert: false,
-    );
-
-    print('Permission status: ${settings.authorizationStatus}');
-  }
-
-  Future<void> setupFlutterNotifications() async {
-    if (_isFlutterLocalNotificationsInitialized) {
-      return;
+  Future<void> _init() async {
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
     }
 
-    // android setup
-    const channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-    );
+    if (html.Notification.permission == 'granted') {
+      setState(() {
+        _granted = true;
+      });
+    }
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
-    const initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    // ios setup
-    final initializationSettingsDarwin = DarwinInitializationSettings(
-      onDidReceiveLocalNotification: (id, title, body, payload) async {
-        // Handle iOS foreground notification
-      },
-    );
-
-    final initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-    );
-
-    // flutter notification setup
-    await _localNotifications.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (details) {},
-    );
-
-    _isFlutterLocalNotificationsInitialized = true;
+    setState(() {
+      _initialized = true;
+    });
   }
 
-  Future<void> showNotification(RemoteMessage message) async {
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
-    if (notification != null && android != null) {
-      await _localNotifications.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription:
-                'This channel is used for important notifications.',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        payload: message.data.toString(),
-      );
+  Future<void> _request() async {
+    try {
+      final permission = await html.Notification.requestPermission();
+      if (permission == 'granted') {
+        final messaging = FirebaseMessaging.instance;
+        final token = await messaging.getToken();
+
+        print('FCM Token: $token');
+        setState(() {
+          _granted = true;
+        });
+        _setupMessageHandlers();
+      } else {
+        setState(() {
+          _granted = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _initialized = true;
+        _granted = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -139,4 +90,75 @@ class NotificationService {
       // open chat screen
     }
   }
+
+  Future<void> showNotification(RemoteMessage message) async {
+    final notif = message.notification;
+    if (notif != null) {
+      final sw = html.window.navigator.serviceWorker;
+      if (sw != null) {
+        final swReg = await sw.ready;
+        await swReg.showNotification(
+          notif.title ?? '',
+            {
+              'body': notif.body,
+              'icon': '@mipmap/ic_launcher',
+              'data': message.data,
+            }
+        );
+      } else {
+        html.Notification(notif.title ?? '',
+            body: notif.body,
+            icon: '@mipmap/ic_launcher');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (!_granted) {
+      return MaterialApp(
+        home: Scaffold(
+          appBar: AppBar(title: Text('Необходимо разрешение')),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+
+              children: [
+                Text(
+                  'Для работы приложения нужно разрешение на отправку уведомлений',
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _request,
+                  child: Text('Запросить разрешение'),
+                ),
+                if (_error != null) ...[
+                  SizedBox(height: 20),
+                  Text('Error: $_error', style: TextStyle(color: Colors.red)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return MyApp();
+  }
+}
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(FirebasePermissionGate());
 }
