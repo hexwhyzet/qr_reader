@@ -1,4 +1,4 @@
-import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qr_reader/request.dart';
@@ -256,20 +256,36 @@ class _QRMiniAppState extends State<QRMiniApp> {
                                     body: Container(
                                       color: Theme.of(context).canvasColor,
                                       child: SafeArea(
-                                        child: AiBarcodeScanner(
-                                          canPop: false,
-                                          onScan: (String value) async {
-                                            await Future.delayed(
-                                                Duration(milliseconds: 500));
-                                            _sendVisit(value);
-                                            Navigator.pop(context);
-                                          },
-                                          onDetect: (p0) {},
-                                          bottomBarText: "Отсканируйте QR код",
-                                          controller: MobileScannerController(
-                                            detectionSpeed:
-                                                DetectionSpeed.noDuplicates,
-                                          ),
+                                        child: Stack(
+                                          children: [
+                                            MobileScanner(
+                                              controller: MobileScannerController(
+                                                detectionSpeed: DetectionSpeed.noDuplicates,
+                                              ),
+                                              onDetect: (BarcodeCapture capture) async {
+                                                if (capture.barcodes.isEmpty) return;
+                                                final barcode = capture.barcodes.first;
+                                                final String? value = barcode.rawValue;
+                                                if (value == null) return;
+
+                                                _sendVisit(value);
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            Align(
+                                              alignment: Alignment.bottomCenter,
+                                              child: Container(
+                                                width: double.infinity,
+                                                color: Colors.black54,
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                child: const Text(
+                                                  'Отсканируйте QR код',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),

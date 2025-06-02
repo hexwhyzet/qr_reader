@@ -1,11 +1,11 @@
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_reader/alert.dart';
 import 'package:qr_reader/appbar.dart';
 import 'package:qr_reader/qr_mini_app.dart';
 import 'package:qr_reader/request.dart';
-import 'package:qr_reader/services/notification_service.dart';
 import 'package:qr_reader/settings.dart';
 
 import 'canteen_manager_mini_app.dart';
@@ -165,9 +165,12 @@ class _MenuScreenState extends State<MenuScreen> {
       config.userId.setSetting(response['id'].toString());
     }
 
-    if (NotificationService.instance.token != null) {
+    final messaging = FirebaseMessaging.instance;
+    final token = await messaging.getToken();
+
+    if (token != null) {
       sendRequest('POST', 'register_notification_token',
-          body: {'notification_token': NotificationService.instance.token});
+          body: {'notification_token': token});
     }
 
     _iconInfo = [
