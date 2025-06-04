@@ -1,3 +1,6 @@
+import 'dart:developer' as console;
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/secure_storage.dart';
@@ -47,7 +50,7 @@ class _AuthCheckerState extends State<AuthChecker> {
   }
 
   Future<void> _checkAuthToken() async {
-    Map<String, dynamic>? response = await sendRequest('GET', 'whoami');
+    Map<String, dynamic>? response = await sendRequest('GET', 'whoami/');
 
     try {
       if (response != null &&
@@ -105,15 +108,29 @@ class LoginScreen extends StatelessWidget {
     final password = _passwordController.text;
 
     if (username.isNotEmpty && password.isNotEmpty) {
-      Map<String, dynamic>? response = await sendRequest('POST', 'token/',
-          body: {'username': username, 'password': password});
+      try {
+        Map<String, dynamic>? response = await sendRequest(
+          'POST',
+          'token/',
+          body: {'username': username, 'password': password},
+          disableInterceptor: true,
+        );
 
-      if (response != null && response.containsKey('access')) {
-        tokenStorage.saveToken(response['access']);
-        refreshStorage.saveToken(response['refresh']);
-        onLoginSuccess();
-      } else {
-        await raiseErrorFlushbar(context, "Произошла ошибка запроса");
+        if (response != null && response.containsKey('access')) {
+          tokenStorage.saveToken(response['access']);
+          refreshStorage.saveToken(response['refresh']);
+          onLoginSuccess();
+        } else {
+          raiseErrorFlushbar(context, "Произошла ошибка запроса");
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          raiseErrorFlushbar(context, "Неверный логин или пароль");
+        } else {
+          raiseErrorFlushbar(context, "Ошибка подключения: ${e.message}");
+        }
+      } catch (e) {
+        raiseErrorFlushbar(context, "Неизвестная ошибка: $e");
       }
     } else {
       raiseErrorFlushbar(context, "Пароль и логин должны быть заполнены");

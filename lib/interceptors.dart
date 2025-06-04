@@ -1,3 +1,5 @@
+import 'dart:developer' as console;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qr_reader/request.dart';

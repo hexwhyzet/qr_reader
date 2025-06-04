@@ -1,4 +1,6 @@
+import 'dart:developer' as console;
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
@@ -82,8 +84,9 @@ Future<dynamic> sendFileWithMultipart(
     Map<String, dynamic>? queryParams,
     bool disableInterceptor = false}) async {
   body ??= {};
-  body[fileKey] = await MultipartFile.fromFile(file.path,
-      filename: file.path.split('/').last);
+  Uint8List content = await file.readAsBytes();
+  body[fileKey] = MultipartFile.fromBytes(content,
+      filename: file.name);
   return sendRequestWithStatus(method, endpoint,
       body: body,
       queryParams: queryParams,

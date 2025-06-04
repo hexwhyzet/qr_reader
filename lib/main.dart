@@ -4,6 +4,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_reader/services/notification_service.dart';
+import 'package:qr_reader/universal_safe_area.dart';
 
 import 'firebase_options.dart';
 import 'login.dart';
@@ -42,9 +43,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      themeMode: ThemeMode.light,
       title: 'Sostra',
       theme: FlexThemeData.light(colors: customScheme),
-      darkTheme: FlexThemeData.dark(colors: customScheme),
       debugShowCheckedModeBanner: false,
       home: Builder(
         builder: (BuildContext context) {

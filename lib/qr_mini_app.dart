@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
+import 'package:qr_reader/universal_safe_area.dart';
 import 'package:qr_reader/visits.dart';
 
 import 'alert.dart';
@@ -49,7 +50,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
 
   Future<void> _checkStatus(String code) async {
     Map<String, dynamic>? response =
-        await sendRequest('GET', 'guard/$code/round_status');
+        await sendRequest('GET', 'guard/$code/round_status/');
     if (response != null && response['success']) {
       setState(() {
         if (_onRounds = response['is_active']) {
@@ -64,7 +65,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
   }
 
   Future<bool> _submitCode(String code) async {
-    Map<String, dynamic>? response = await sendRequest('GET', 'auth/$code');
+    Map<String, dynamic>? response = await sendRequest('GET', 'auth/$code/');
     if (response != null) {
       if (response['success']) {
         await _saveCode(code);
@@ -114,7 +115,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
 
   Future<void> _startRound() async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'guard/$_savedCode/start_round');
+        await sendRequest('POST', 'guard/$_savedCode/start_round/');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = true;
@@ -124,7 +125,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
 
   Future<void> _endRound() async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'guard/$_savedCode/end_round');
+        await sendRequest('POST', 'guard/$_savedCode/end_round/');
     if (response != null && response['success']) {
       setState(() {
         _onRounds = false;
@@ -135,7 +136,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
 
   void _sendVisit(String number) async {
     Map<String, dynamic>? response =
-        await sendRequest('POST', 'guard/$_savedCode/visit_point/$number');
+        await sendRequest('POST', 'guard/$_savedCode/visit_point/$number/');
     if (response == null || !response['success']) {
       print("Error occured");
       print(response);

@@ -287,7 +287,7 @@ class _ModalBottomSheetContentState extends State<ModalBottomSheetContent> {
     final text = _textController.text;
     if (text.isNotEmpty) {
       Map<String, dynamic>? response = await sendRequest('POST',
-          'guard/${widget.code}/visit_point/${widget.point_id}/add_message',
+          'guard/${widget.code}/visit_point/${widget.point_id}/add_message/',
           body: {'text': text});
       if (Navigator.canPop(context)) {
         Navigator.pop(context);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as console;
 
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:qr_reader/alert.dart';
 import 'package:qr_reader/data/dispatch/duty_point.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
+import 'package:qr_reader/universal_safe_area.dart';
 import 'package:qr_reader/visits.dart';
 import 'package:video_player/video_player.dart';
 
@@ -557,6 +559,7 @@ class _DutyScheduleState extends State<DutySchedule> {
 
 class IncidentDetailScreen extends StatefulWidget {
   final int incidentId;
+  final expandableFabKey = GlobalKey<ExpandableFabState>();
 
   IncidentDetailScreen({required this.incidentId});
 
@@ -564,7 +567,8 @@ class IncidentDetailScreen extends StatefulWidget {
   _IncidentDetailScreenState createState() => _IncidentDetailScreenState();
 }
 
-class _IncidentDetailScreenState extends State<IncidentDetailScreen> with WidgetsBindingObserver {
+class _IncidentDetailScreenState extends State<IncidentDetailScreen>
+    with WidgetsBindingObserver {
   bool _isDescriptionVisible = false;
   Incident? _incident;
   List<IncidentMessage> _messages = [];
@@ -604,7 +608,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> with Widget
 
   Future<void> fetchActions() async {
     availableActions = (await sendRequest(
-            'GET', 'dispatch/incidents/${widget.incidentId}/available_actions'))
+            'GET', 'dispatch/incidents/${widget.incidentId}/available_actions/'))
         .cast<String>();
   }
 
@@ -711,10 +715,13 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> with Widget
     switch (message.type) {
       case 'photo':
         return InstaImageViewer(
-          child: Image(
-            image: Image.network(message.contentObject.photoUrl!,
-                errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.broken_image)).image,
+          child: Image.network(
+            message.contentObject.photoUrl!,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('Ошибка при загрузке изображения: $error');
+              debugPrint('StackTrace: $stackTrace');
+              return const Icon(Icons.broken_image);
+            }
           ),
         );
       case 'video':
@@ -916,13 +923,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> with Widget
 
   @override
   Widget build(BuildContext context) {
-    final _key = GlobalKey<ExpandableFabState>();
-
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
       floatingActionButton: ExpandableFab(
-        key: _key,
+        key: widget.expandableFabKey,
         openButtonBuilder: RotateFloatingActionButtonBuilder(
           child: const Icon(Icons.add, size: 32),
           fabSize: ExpandableFabSize.regular,
@@ -944,7 +949,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> with Widget
             child: const Icon(Icons.edit),
             onPressed: () {
               showMessageModal(context);
-              final state = _key.currentState;
+              final state = widget.expandableFabKey.currentState;
               if (state != null) {
                 state.toggle();
               }

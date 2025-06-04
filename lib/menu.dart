@@ -126,7 +126,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> asyncSetup() async {
-    Map<String, dynamic>? response = await sendRequest('GET', 'whoami');
+    Map<String, dynamic>? response = await sendRequest('GET', 'whoami/');
 
     bool isQrServiceAvailable = false;
     bool isCanteenServiceAvailable = false;
@@ -169,7 +169,7 @@ class _MenuScreenState extends State<MenuScreen> {
     final token = await messaging.getToken();
 
     if (token != null) {
-      sendRequest('POST', 'register_notification_token',
+      sendRequest('POST', 'register_notification_token/',
           body: {'notification_token': token});
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:qr_reader/botton.dart';
+import 'package:qr_reader/universal_safe_area.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<String?> _getSetting(String key) async {
@@ -59,7 +60,7 @@ class DefaultSettingAccessor {
 class Config {
   SettingAccessor code = SettingAccessor(settingKey: 'code');
   DefaultSettingAccessor hostname = DefaultSettingAccessor(
-      settingKey: 'hostname', defaultValue: '130.193.44.171:8000');
+      settingKey: 'hostname', defaultValue: 'appsostra.ru');
   SettingAccessor userId = SettingAccessor(settingKey: 'userId');
 }
 
@@ -116,6 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
         toolbarHeight: 65,
+        titleTextStyle: TextStyle(color: Theme.of(context).canvasColor),
         title: Text('Настройки'),
       ),
       body: SafeArea(
