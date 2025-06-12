@@ -21,6 +21,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
   String? _name;
   VisitStorage visitStorage = VisitStorage();
   bool _onRounds = false;
+  String? _lastScannedValue;
 
   @override
   void initState() {
@@ -245,6 +246,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
                             bg: Theme.of(context).primaryColor,
                             fg: Colors.white,
                             onPressed: () async {
+                              _lastScannedValue = null;
                               await Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => Scaffold(
@@ -263,14 +265,17 @@ class _QRMiniAppState extends State<QRMiniApp> {
                                               controller: MobileScannerController(
                                                 detectionSpeed: DetectionSpeed.noDuplicates,
                                               ),
-                                              onDetect: (BarcodeCapture capture) async {
+                                              onDetect: (BarcodeCapture capture) {
                                                 if (capture.barcodes.isEmpty) return;
                                                 final barcode = capture.barcodes.first;
                                                 final String? value = barcode.rawValue;
                                                 if (value == null) return;
+                                                if (value == _lastScannedValue) return;
+                                                _lastScannedValue = value;
+
+                                                Navigator.pop(context);
 
                                                 _sendVisit(value);
-                                                Navigator.of(context).pop();
                                               },
                                             ),
                                             Align(
