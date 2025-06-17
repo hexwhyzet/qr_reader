@@ -1,6 +1,6 @@
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 import 'package:qr_reader/universal_safe_area.dart';
@@ -8,6 +8,89 @@ import 'package:qr_reader/visits.dart';
 
 import 'alert.dart';
 import 'botton.dart';
+
+class QRViewExample extends StatefulWidget {
+  const QRViewExample({Key? key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => _QRViewExampleState();
+}
+
+class _QRViewExampleState extends State<QRViewExample> {
+  Barcode? result;
+  QRViewController? controller;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  String? last_scanned;
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    controller!.resumeCamera();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: <Widget>[
+          Expanded(flex: 4, child: _buildQrView(context)),
+          const Expanded(
+            flex: 1,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[]
+                  ),
+            ),
+            ),
+          ]
+      ),
+    );
+  }
+
+  Widget _buildQrView(BuildContext context) {
+    // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
+    var scanArea = (MediaQuery.of(context).size.width < 400 ||
+        MediaQuery.of(context).size.height < 400)
+        ? 150.0
+        : 300.0;
+    // To ensure the Scanner view is properly sizes after rotation
+    // we need to listen for Flutter SizeChanged notification and update controller
+    return QRView(
+      key: qrKey,
+      onQRViewCreated: _onQRViewCreated,
+      overlay: QrScannerOverlayShape(
+          borderColor: Colors.red,
+          borderRadius: 10,
+          borderLength: 30,
+          borderWidth: 10,
+          cutOutSize: scanArea),
+      onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+    );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      if (last_scanned != scanData.code) {
+        last_scanned = scanData.code;
+        if (!mounted) return;
+        Navigator.pop(context, scanData.code);
+      }
+    });
+  }
+
+  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
+    if (!p) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('no Permission')),
+      );
+    }
+  }
+}
 
 class QRMiniApp extends StatefulWidget {
   @override
@@ -247,57 +330,12 @@ class _QRMiniAppState extends State<QRMiniApp> {
                             fg: Colors.white,
                             onPressed: () async {
                               _lastScannedValue = null;
-                              await Navigator.of(context).push(
+                              final result = await Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => Scaffold(
-                                    backgroundColor: Colors.white,
-                                    appBar: AppBar(
-                                      backgroundColor:
-                                          Theme.of(context).primaryColor,
-                                      toolbarHeight: 65,
-                                    ),
-                                    body: Container(
-                                      color: Theme.of(context).canvasColor,
-                                      child: SafeArea(
-                                        child: Stack(
-                                          children: [
-                                            MobileScanner(
-                                              controller: MobileScannerController(
-                                                detectionSpeed: DetectionSpeed.noDuplicates,
-                                              ),
-                                              onDetect: (BarcodeCapture capture) {
-                                                if (capture.barcodes.isEmpty) return;
-                                                final barcode = capture.barcodes.first;
-                                                final String? value = barcode.rawValue;
-                                                if (value == null) return;
-                                                if (value == _lastScannedValue) return;
-                                                _lastScannedValue = value;
-
-                                                Navigator.pop(context);
-
-                                                _sendVisit(value);
-                                              },
-                                            ),
-                                            Align(
-                                              alignment: Alignment.bottomCenter,
-                                              child: Container(
-                                                width: double.infinity,
-                                                color: Colors.black54,
-                                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                                child: const Text(
-                                                  'Отсканируйте QR код',
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(color: Colors.white, fontSize: 16),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  builder: (context) => const QRViewExample()
                                 ),
                               );
+                              _sendVisit(result);
                             },
                           )
                         else
