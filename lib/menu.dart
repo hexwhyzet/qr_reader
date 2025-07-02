@@ -74,26 +74,24 @@ class ChangePasswordScreen extends StatelessWidget {
                   }
 
                   try {
-                    Map<String, dynamic>? response = await sendRequest(
+                    Map<String, dynamic>? _ = await sendRequest(
                         'POST', 'auth/change_password/', body: {
                       'old_password': oldPass,
                       'new_password': newPass
                     });
-
-
+                    Navigator.pop(context);
+                    raiseSuccessFlushbar(context, "Пароль изменён");
                   } on DioException catch (e) {
-                    print(e.error);
-                    print(e.message);
                     print(e.response);
-                    if (e.response?.data["error"] != null) {
-                      raiseErrorFlushbar(context, e.response?.data["error"]);
-                    } else if (e.response?.data["old_password"] != null) {
-                      raiseErrorFlushbar(context, "Старый пароль неправильный");
+                    print(e.response?.data);
+                    if (e.response?.data["old_password"] != null) {
+                      raiseErrorFlushbar(context, e.response?.data["old_password"][0]);
+                    } else if (e.response?.data["new_password"] != null) {
+                      raiseErrorFlushbar(context, e.response?.data["new_password"][0]);
+                    } else {
+                      raiseErrorFlushbar(context, e.response?.data);
                     }
                   }
-
-                  Navigator.pop(context);
-                  raiseSuccessFlushbar(context, "Пароль изменён");
                 },
                 child: const Text('Сменить пароль'),
               ),
