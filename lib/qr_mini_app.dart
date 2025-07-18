@@ -50,13 +50,10 @@ class _QRViewExampleState extends State<QRViewExample> {
   }
 
   Widget _buildQrView(BuildContext context) {
-    // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
     var scanArea = (MediaQuery.of(context).size.width < 400 ||
         MediaQuery.of(context).size.height < 400)
         ? 150.0
         : 300.0;
-    // To ensure the Scanner view is properly sizes after rotation
-    // we need to listen for Flutter SizeChanged notification and update controller
     return QRView(
       key: qrKey,
       onQRViewCreated: _onQRViewCreated,
@@ -75,10 +72,13 @@ class _QRViewExampleState extends State<QRViewExample> {
       this.controller = controller;
     });
     controller.scannedDataStream.listen((scanData) {
-      if (last_scanned != scanData.code) {
+      if (scanData.code != null && last_scanned == null) {
         last_scanned = scanData.code;
-        if (!mounted) return;
-        Navigator.pop(context, scanData.code);
+        Future.microtask(() {
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context, last_scanned);
+          }
+        });
       }
     });
   }
@@ -104,7 +104,6 @@ class _QRMiniAppState extends State<QRMiniApp> {
   String? _name;
   VisitStorage visitStorage = VisitStorage();
   bool _onRounds = false;
-  String? _lastScannedValue;
 
   @override
   void initState() {
@@ -329,7 +328,6 @@ class _QRMiniAppState extends State<QRMiniApp> {
                             bg: Theme.of(context).primaryColor,
                             fg: Colors.white,
                             onPressed: () async {
-                              _lastScannedValue = null;
                               final result = await Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => const QRViewExample()

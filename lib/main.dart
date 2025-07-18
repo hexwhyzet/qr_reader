@@ -1,12 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_reader/services/notification_service.dart';
-import 'package:qr_reader/universal_safe_area.dart';
-
-import 'firebase_options.dart';
 import 'login.dart';
 
 const primaryColor = Color(0xFF006940);
@@ -23,22 +17,14 @@ void main() async {
   );
 
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
 
-  runApp(FirebasePermissionGate());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  FlexSchemeColor customScheme = FlexSchemeColor.from(primary: primaryColor);
+  final FlexSchemeColor customScheme = FlexSchemeColor.from(primary: primaryColor);
 
   @override
   Widget build(BuildContext context) {
