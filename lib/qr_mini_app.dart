@@ -72,13 +72,10 @@ class _QRViewExampleState extends State<QRViewExample> {
       this.controller = controller;
     });
     controller.scannedDataStream.listen((scanData) {
-      if (scanData.code != null && last_scanned == null) {
+      if (last_scanned != scanData.code) {
         last_scanned = scanData.code;
-        Future.microtask(() {
-          if (mounted && Navigator.canPop(context)) {
-            Navigator.pop(context, last_scanned);
-          }
-        });
+        if (!mounted) return;
+        Navigator.pop(context, scanData.code);
       }
     });
   }
@@ -104,6 +101,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
   String? _name;
   VisitStorage visitStorage = VisitStorage();
   bool _onRounds = false;
+  String? _lastScannedValue;
 
   @override
   void initState() {
@@ -328,6 +326,7 @@ class _QRMiniAppState extends State<QRMiniApp> {
                             bg: Theme.of(context).primaryColor,
                             fg: Colors.white,
                             onPressed: () async {
+                              _lastScannedValue = null;
                               final result = await Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) => const QRViewExample()

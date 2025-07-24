@@ -163,6 +163,14 @@ class _MenuScreenState extends State<MenuScreen> {
       config.userId.setSetting(response['id'].toString());
     }
 
+    final messaging = FirebaseMessaging.instance;
+    final token = await messaging.getToken();
+
+    if (token != null) {
+      sendRequest('POST', 'register_notification_token/',
+          body: {'notification_token': token});
+    }
+
     _iconInfo = [
       _IconInfo(
           icon: Icons.fastfood,

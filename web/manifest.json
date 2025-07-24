@@ -1,4 +1,5 @@
 {
+    "gcm_sender_id": "103953800507",
     "name": "qr_reader",
     "short_name": "qr_reader",
     "start_url": ".",

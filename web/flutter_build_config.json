@@ -1,0 +1,9 @@
+{
+  "builds": [
+    {
+      "entrypoint": "main.dart.js",
+      "serviceWorker": "flutter_service_worker.js",
+      "renderer": "html"
+    }
+  ]
+}
