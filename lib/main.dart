@@ -32,17 +32,18 @@ void main() async {
     sound: true,
   );
 
-  runApp(FirebasePermissionGate());
+  runApp(const FirebasePermissionGate());
 }
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  FlexSchemeColor customScheme = FlexSchemeColor.from(primary: primaryColor);
+  final FlexSchemeColor customScheme = FlexSchemeColor.from(primary: primaryColor);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      locale: const Locale('ru'),
       themeMode: ThemeMode.light,
       title: 'Sostra',
       theme: FlexThemeData.light(colors: customScheme),

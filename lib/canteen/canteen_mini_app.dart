@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:qr_reader/create_dish_order.dart';
+import 'package:qr_reader/canteen/create_dish_order.dart';
 import 'package:qr_reader/request.dart';
 
-import 'alert.dart';
-import 'canteen_manager_mini_app.dart';
+import '../alert.dart';
+import 'package:qr_reader/canteen/canteen_manager_mini_app.dart';
 
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -18,6 +18,8 @@ String getDishTypeName(String? dishType) {
       return 'Второе блюдо';
     case 'salad':
       return 'Салат';
+    case 'drink':
+      return 'Напиток';
     default:
       return 'Неизвестный тип';
   }

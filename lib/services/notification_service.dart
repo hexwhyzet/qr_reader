@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-import '../alert.dart';
 import '../main.dart';
-import '../request.dart';
 
 class FirebasePermissionGate extends StatefulWidget {
+  const FirebasePermissionGate({super.key});
+
   @override
-  _FirebasePermissionGateState createState() => _FirebasePermissionGateState();
+  State<FirebasePermissionGate> createState() => _FirebasePermissionGateState();
 }
 
 class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
@@ -139,8 +139,9 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
 
     if (_unsupported) {
       return MaterialApp(
+          locale: const Locale('ru'),
           home: Scaffold(
-              appBar: AppBar(title: Text('Необходимо разрешение')),
+              appBar: AppBar(title: const Text('Необходимо разрешение')),
               body: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -148,16 +149,16 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
                     crossAxisAlignment: CrossAxisAlignment.center,
 
                     children: [
-                        Text(
+                        const Text(
                           'Уведомления не поддеживаются вашим браузером. Подпишитесь на них в телеграм боте',
                           textAlign: TextAlign.center,
                         ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ElevatedButton(
                       onPressed: () => setState(() {
                         _showApp = true;
                       }),
-                      child: Text('Понятно'),
+                      child: const Text('Понятно'),
                       ),
                     ],
                   ),
@@ -167,7 +168,8 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
     }
 
     if (!_initialized) {
-      return MaterialApp(
+      return const MaterialApp(
+        locale: Locale('ru'),
         home: Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
@@ -175,8 +177,9 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
     }
 
     return MaterialApp(
+        locale: const Locale('ru'),
         home: Scaffold(
-          appBar: AppBar(title: Text('Необходимо разрешение')),
+          appBar: AppBar(title: const Text('Необходимо разрешение')),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -184,27 +187,27 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
               crossAxisAlignment: CrossAxisAlignment.center,
 
               children: [
-                Text(
+                const Text(
                   'Для работы приложения нужно разрешение на отправку уведомлений',
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _request,
-                  child: Text('Запросить разрешение'),
+                  child: const Text('Запросить разрешение'),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () => {
                     setState(() {
                       _showApp = true;
                     })
                   },
-                  child: Text('Продолжить без уведомлений'),
+                  child: const Text('Продолжить без уведомлений'),
                 ),
                 if (_error != null) ...[
-                  SizedBox(height: 20),
-                  Text('Error: $_error', style: TextStyle(color: Colors.red)),
+                  const SizedBox(height: 20),
+                  Text('Error: $_error', style: const TextStyle(color: Colors.red)),
                 ],
               ],
             ),
