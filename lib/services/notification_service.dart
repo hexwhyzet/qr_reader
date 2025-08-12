@@ -4,16 +4,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../main.dart';
-import '../request.dart';
 
 class FirebasePermissionGate extends StatefulWidget {
+  const FirebasePermissionGate({super.key});
+
   @override
-  _FirebasePermissionGateState createState() => _FirebasePermissionGateState();
+  State<FirebasePermissionGate> createState() => _FirebasePermissionGateState();
 }
 
 class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
   bool _initialized = false;
   bool _granted = false;
+  bool _unsupported = false;
+  bool _showApp = false;
   String? _error;
   final _messaging = FirebaseMessaging.instance;
 
@@ -24,10 +27,18 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
   }
 
   Future<void> _init() async {
+    if (!html.Notification.supported) {
+      setState(() {
+        _unsupported = true;
+      });
+      return;
+    }
+
     try {
       await Firebase.initializeApp();
     } catch (e) {
       setState(() {
+        _unsupported = true;
         _error = e.toString();
       });
     }
@@ -44,6 +55,9 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
   }
 
   Future<void> _request() async {
+    if (!html.Notification.supported) {
+      return;
+    }
     try {
       final permission = await html.Notification.requestPermission();
       if (permission == 'granted') {
@@ -57,16 +71,20 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
         _setupMessageHandlers();
       } else {
         setState(() {
+          _unsupported = true;
           _granted = false;
         });
       }
     } catch (e) {
       setState(() {
-        _initialized = true;
         _granted = false;
+        _unsupported = true;
         _error = e.toString();
       });
     }
+    setState(() {
+      _initialized = true;
+    });
   }
 
   Future<void> _setupMessageHandlers() async {
@@ -115,18 +133,53 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
+    if (_showApp || _granted) {
+      return MyApp();
+    }
+
+    if (_unsupported) {
       return MaterialApp(
+          locale: const Locale('ru'),
+          home: Scaffold(
+              appBar: AppBar(title: const Text('Необходимо разрешение')),
+              body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+
+                    children: [
+                        const Text(
+                          'Уведомления не поддеживаются вашим браузером. Подпишитесь на них в телеграм боте',
+                          textAlign: TextAlign.center,
+                        ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                      onPressed: () => setState(() {
+                        _showApp = true;
+                      }),
+                      child: const Text('Понятно'),
+                      ),
+                    ],
+                  ),
+              ),
+          ),
+      );
+    }
+
+    if (!_initialized) {
+      return const MaterialApp(
+        locale: Locale('ru'),
         home: Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
       );
     }
 
-    if (!_granted) {
-      return MaterialApp(
+    return MaterialApp(
+        locale: const Locale('ru'),
         home: Scaffold(
-          appBar: AppBar(title: Text('Необходимо разрешение')),
+          appBar: AppBar(title: const Text('Необходимо разрешение')),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -134,27 +187,33 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
               crossAxisAlignment: CrossAxisAlignment.center,
 
               children: [
-                Text(
+                const Text(
                   'Для работы приложения нужно разрешение на отправку уведомлений',
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _request,
-                  child: Text('Запросить разрешение'),
+                  child: const Text('Запросить разрешение'),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => {
+                    setState(() {
+                      _showApp = true;
+                    })
+                  },
+                  child: const Text('Продолжить без уведомлений'),
                 ),
                 if (_error != null) ...[
-                  SizedBox(height: 20),
-                  Text('Error: $_error', style: TextStyle(color: Colors.red)),
+                  const SizedBox(height: 20),
+                  Text('Error: $_error', style: const TextStyle(color: Colors.red)),
                 ],
               ],
             ),
           ),
         ),
       );
-    }
-
-    return MyApp();
   }
 }
 

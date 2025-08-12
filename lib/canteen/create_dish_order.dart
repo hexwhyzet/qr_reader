@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_reader/request.dart';
 
-import 'alert.dart';
-import 'canteen_mini_app.dart';
+import '../alert.dart';
+import './canteen_mini_app.dart';
 
 class CreateDishOrderView extends StatefulWidget {
   final List<dynamic> dishes;

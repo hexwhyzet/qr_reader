@@ -1,8 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_reader/request.dart';
+
+import 'canteen_edit_dish.dart';
 
 class CanteenManagerMiniApp extends StatelessWidget {
   const CanteenManagerMiniApp({super.key});
@@ -51,6 +51,18 @@ class CanteenManagerMiniApp extends StatelessWidget {
                 );
               },
               child: const Text('Просмотр удалённых заказов'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DishesEditImagesView(),
+                  ),
+                );
+              },
+              child: const Text('Редактировать фотграфии блюд'),
             ),
           ],
         ),
