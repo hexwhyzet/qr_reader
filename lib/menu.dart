@@ -129,7 +129,7 @@ class _MenuScreenState extends State<MenuScreen> {
     bool isQrServiceAvailable = false;
     bool isCanteenServiceAvailable = false;
     bool isCanteenManagerAvailable = false;
-    bool isDispatchAvailable = true;
+    bool isDispatchAvailable = false;
 
     try {
       if (response != null && response['must_change_password']) {
@@ -142,17 +142,17 @@ class _MenuScreenState extends State<MenuScreen> {
       if (response != null &&
           response.containsKey('success') &&
           response['success']) {
-        if (response['groups'].contains('qr_guard') &&
-            response['extra'].containsKey('guard_id')) {
-          await config.code
-              .setSetting(response['extra']['guard_id'].toString());
+        if (response['available_apps'].contains('qr_patrol')) {
           isQrServiceAvailable = true;
         }
-        if (response['groups'].contains('canteen_employee')) {
+        if (response['available_apps'].contains('canteen')) {
           isCanteenServiceAvailable = true;
         }
-        if (response['groups'].contains('canteen_manager')) {
+        if (response['available_apps'].contains('canteen_manager')) {
           isCanteenManagerAvailable = true;
+        }
+        if (response['available_apps'].contains('dispatch')) {
+          isDispatchAvailable = true;
         }
       }
     } catch (e) {

@@ -15,6 +15,7 @@ class Incident {
   final User? responsibleUser;
   final DutyPoint? point;
   final DateTime createdAt;
+  final bool isAccepted;
 
   Incident({
     required this.id,
@@ -28,6 +29,7 @@ class Incident {
     this.responsibleUser,
     this.point,
     required this.createdAt,
+    required this.isAccepted,
   });
 
   factory Incident.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,7 @@ class Incident {
           : null,
       point: json['point'] != null ? DutyPoint.fromJson(json['point']) : null,
       createdAt: DateTime.parse(json['created_at']), // Parse created_at
+      isAccepted: json['is_accepted'],
     );
   }
 
@@ -61,6 +64,7 @@ class Incident {
       'responsible_user': responsibleUser?.toJson(),
       'point': point?.toJson(),
       'created_at': createdAt.toIso8601String(), // Serialize createdAt
+      'is_accepted': isAccepted,
     };
   }
 

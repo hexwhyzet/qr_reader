@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as console;
 
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
@@ -12,10 +11,10 @@ import 'package:qr_reader/alert.dart';
 import 'package:qr_reader/data/dispatch/duty_point.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
-import 'package:qr_reader/universal_safe_area.dart';
 import 'package:qr_reader/visits.dart';
 import 'package:video_player/video_player.dart';
 
+import 'botton.dart';
 import 'data/common/user.dart';
 import 'data/dispatch/duty.dart';
 import 'data/dispatch/incident.dart';
@@ -192,6 +191,8 @@ class _TransferDutyScreenState extends State<TransferDutyScreen> {
   User? _selectedUser;
   bool _isLoading = true;
 
+  final TextEditingController _reasonTextController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -215,18 +216,18 @@ class _TransferDutyScreenState extends State<TransferDutyScreen> {
   }
 
   void _transferDuty() async {
-    if (_selectedUser == null) {
-      raiseErrorFlushbar(context, "Выберите пользователя");
-      return;
-    }
+    // if (_selectedUser == null) {
+    //   raiseErrorFlushbar(context, "Выберите пользователя");
+    //   return;
+    // }
 
-    final int userId = _selectedUser!.id;
+    final int userId = _selectedUser == null ? 0 : _selectedUser!.id;
     final int dutyId = widget.dutyId;
 
     try {
       Map<String, dynamic>? response = await sendRequest(
           'POST', 'dispatch/duties/$dutyId/transfer_duty/',
-          body: {'user_id': userId});
+          body: {'user_id': userId, 'user_reason': _reasonTextController.text});
     } catch (e) {
       raiseErrorFlushbar(context, 'Не удалось передать дежурство');
       return;
@@ -265,6 +266,16 @@ class _TransferDutyScreenState extends State<TransferDutyScreen> {
                       });
                     },
                     value: _selectedUser,
+                  ),
+                  TextField(
+                    controller: _reasonTextController,
+                    keyboardType: TextInputType.multiline,
+                    maxLines: null,
+                    minLines: 3,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Введите причину',
+                    ),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -607,8 +618,8 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
   }
 
   Future<void> fetchActions() async {
-    availableActions = (await sendRequest(
-            'GET', 'dispatch/incidents/${widget.incidentId}/available_actions/'))
+    availableActions = (await sendRequest('GET',
+            'dispatch/incidents/${widget.incidentId}/available_actions/'))
         .cast<String>();
   }
 
@@ -715,14 +726,12 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
     switch (message.type) {
       case 'photo':
         return InstaImageViewer(
-          child: Image.network(
-            message.contentObject.photoUrl!,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('Ошибка при загрузке изображения: $error');
-              debugPrint('StackTrace: $stackTrace');
-              return const Icon(Icons.broken_image);
-            }
-          ),
+          child: Image.network(message.contentObject.photoUrl!,
+              errorBuilder: (context, error, stackTrace) {
+            debugPrint('Ошибка при загрузке изображения: $error');
+            debugPrint('StackTrace: $stackTrace');
+            return const Icon(Icons.broken_image);
+          }),
         );
       case 'video':
         return GestureDetector(
@@ -861,7 +870,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
   AppBar getAppBar() {
     return AppBar(
       title: Text('Инцидент №${widget.incidentId}'),
-      actions: [
+      actions: availableActions.length > 0 ? [
         PopupMenuButton<String>(
           onSelected: (String value) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -905,8 +914,8 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                 ),
               if (availableActions.contains("escalate"))
                 PopupMenuItem<String>(
-                  value: "Эскалировать",
-                  child: Text("Эскалировать"),
+                  value: "Вызвать дежурного сотрудника высшего уровня",
+                  child: Text("Вызвать дежурного сотрудника высшего уровня"),
                   onTap: () async {
                     await sendRequest("POST",
                         "dispatch/incidents/${widget.incidentId}/escalate/");
@@ -917,7 +926,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
           },
           icon: Icon(Icons.more_vert), // Иконка кнопки в AppBar
         ),
-      ],
+      ] : [],
     );
   }
 
@@ -926,89 +935,91 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
-      floatingActionButton: ExpandableFab(
-        key: widget.expandableFabKey,
-        openButtonBuilder: RotateFloatingActionButtonBuilder(
-          child: const Icon(Icons.add, size: 32),
-          fabSize: ExpandableFabSize.regular,
-          foregroundColor: Colors.white,
-          backgroundColor: Theme.of(context).primaryColor,
-          shape: const CircleBorder(),
-        ),
-        closeButtonBuilder: DefaultFloatingActionButtonBuilder(
-          child: const Icon(Icons.close),
-          fabSize: ExpandableFabSize.small,
-          foregroundColor: Colors.white,
-          backgroundColor: Theme.of(context).primaryColor,
-          shape: const CircleBorder(),
-        ),
-        children: [
-          FloatingActionButton(
-            backgroundColor: Theme.of(context).primaryColor,
-            heroTag: null,
-            child: const Icon(Icons.edit),
-            onPressed: () {
-              showMessageModal(context);
-              final state = widget.expandableFabKey.currentState;
-              if (state != null) {
-                state.toggle();
-              }
-            },
-          ),
-          FloatingActionButton(
-            backgroundColor: Theme.of(context).primaryColor,
-            heroTag: null,
-            child: const Icon(Icons.image),
-            onPressed: () async {
-              final ImagePicker picker = ImagePicker();
-              ImageSource? source = await _showMediaOptions(context);
-              if (source != null) {
-                XFile? image = await picker.pickImage(source: source);
-                if (image != null) {
-                  await sendFileWithMultipart(
-                      "POST",
-                      "dispatch/incidents/${widget.incidentId}/messages/",
-                      image,
-                      "photo",
-                      body: {"message_type": "photo"});
-                  fetchMessages();
-                }
-              }
-            },
-          ),
-          FloatingActionButton(
-            backgroundColor: Theme.of(context).primaryColor,
-            heroTag: null,
-            child: const Icon(
-              Icons.video_camera_back_outlined,
-              size: 32,
-            ),
-            onPressed: () async {
-              await requestPermissions();
-              final ImagePicker picker = ImagePicker();
-              ImageSource? source = await _showMediaOptions(context);
-              if (source != null) {
-                XFile? video = await picker.pickVideo(source: source);
-                if (video != null) {
-                  await sendFileWithMultipart(
-                      "POST",
-                      "dispatch/incidents/${widget.incidentId}/messages/",
-                      video,
-                      "video",
-                      body: {"message_type": "video"});
-                  fetchMessages();
-                }
-              }
-            },
-          ),
-          // FloatingActionButton(
-          //   backgroundColor: Theme.of(context).primaryColor,
-          //   heroTag: null,
-          //   child: const Icon(Icons.mic_rounded),
-          //   onPressed: () {},
-          // ),
-        ],
-      ),
+      floatingActionButton: (_incident != null && _incident!.isAccepted)
+          ? ExpandableFab(
+              key: widget.expandableFabKey,
+              openButtonBuilder: RotateFloatingActionButtonBuilder(
+                child: const Icon(Icons.add, size: 32),
+                fabSize: ExpandableFabSize.regular,
+                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).primaryColor,
+                shape: const CircleBorder(),
+              ),
+              closeButtonBuilder: DefaultFloatingActionButtonBuilder(
+                child: const Icon(Icons.close),
+                fabSize: ExpandableFabSize.small,
+                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).primaryColor,
+                shape: const CircleBorder(),
+              ),
+              children: [
+                FloatingActionButton(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  heroTag: null,
+                  child: const Icon(Icons.edit),
+                  onPressed: () {
+                    showMessageModal(context);
+                    final state = widget.expandableFabKey.currentState;
+                    if (state != null) {
+                      state.toggle();
+                    }
+                  },
+                ),
+                FloatingActionButton(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  heroTag: null,
+                  child: const Icon(Icons.image),
+                  onPressed: () async {
+                    final ImagePicker picker = ImagePicker();
+                    ImageSource? source = await _showMediaOptions(context);
+                    if (source != null) {
+                      XFile? image = await picker.pickImage(source: source);
+                      if (image != null) {
+                        await sendFileWithMultipart(
+                            "POST",
+                            "dispatch/incidents/${widget.incidentId}/messages/",
+                            image,
+                            "photo",
+                            body: {"message_type": "photo"});
+                        fetchMessages();
+                      }
+                    }
+                  },
+                ),
+                FloatingActionButton(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  heroTag: null,
+                  child: const Icon(
+                    Icons.video_camera_back_outlined,
+                    size: 32,
+                  ),
+                  onPressed: () async {
+                    await requestPermissions();
+                    final ImagePicker picker = ImagePicker();
+                    ImageSource? source = await _showMediaOptions(context);
+                    if (source != null) {
+                      XFile? video = await picker.pickVideo(source: source);
+                      if (video != null) {
+                        await sendFileWithMultipart(
+                            "POST",
+                            "dispatch/incidents/${widget.incidentId}/messages/",
+                            video,
+                            "video",
+                            body: {"message_type": "video"});
+                        fetchMessages();
+                      }
+                    }
+                  },
+                ),
+                // FloatingActionButton(
+                //   backgroundColor: Theme.of(context).primaryColor,
+                //   heroTag: null,
+                //   child: const Icon(Icons.mic_rounded),
+                //   onPressed: () {},
+                // ),
+              ],
+            )
+          : null,
       appBar: getAppBar(),
       body: _incident == null
           ? Center(child: CircularProgressIndicator())
@@ -1135,6 +1146,25 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                     },
                   ),
                 ),
+                if (_incident != null && !_incident!.isAccepted)
+                  Center(
+                    child: StyledWideButton(
+                      text: "Принять инцидент",
+                      height: 100.0,
+                      bg: Theme.of(context).dialogBackgroundColor,
+                      fg: Theme.of(context).primaryColor,
+                      onPressed: () async {
+                        var response = await sendRequestWithStatus("POST",
+                            "dispatch/incidents/${widget.incidentId}/accept/");
+                        if (response.statusCode != 204) {
+                          raiseErrorFlushbar(context, "Инцидент не удалось принять. Его может принять только ответственный.");
+                        } else {
+                          raiseSuccessFlushbar(context, "Инцидент принят вами.");
+                          fetchAll();
+                        }
+                      },
+                    ),
+                  ),
               ],
             ),
     );
