@@ -8,8 +8,8 @@ import 'package:qr_reader/qr_mini_app.dart';
 import 'package:qr_reader/request.dart';
 import 'package:qr_reader/settings.dart';
 
-import 'canteen_manager_mini_app.dart';
-import 'canteen_mini_app.dart';
+import 'canteen/canteen_manager_mini_app.dart';
+import 'canteen/canteen_mini_app.dart';
 import 'dispatch_mini_app.dart';
 
 class _IconInfo {

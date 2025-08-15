@@ -116,8 +116,6 @@ class _IncidentCreationScreenState extends State<IncidentCreationScreen> {
       },
     );
 
-    print(response.statusCode);
-
     if (response.statusCode == 201) {
       Navigator.pop(context);
     } else {
@@ -398,7 +396,7 @@ class _IncidentListState extends State<IncidentList> {
   Widget build(BuildContext context) {
     List<Incident> responsibleIncidents = incidents
         .where((i) =>
-            i.responsibleUser?.id == currentUserId && i.status == 'opened')
+            i.responsibleUser?.id == currentUserId && (i.status == 'opened' || i.status == 'waiting_to_be_accepted'))
         .toList();
     List<Incident> authorIncidents = incidents
         .where((i) =>
@@ -935,7 +933,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
-      floatingActionButton: (_incident != null && _incident!.isAccepted)
+      floatingActionButton: (_incident != null && _incident!.status != "waiting_to_be_accepted")
           ? ExpandableFab(
               key: widget.expandableFabKey,
               openButtonBuilder: RotateFloatingActionButtonBuilder(
@@ -1049,6 +1047,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                               ),
                               SizedBox(height: 4),
                               Text(
+                                'Система: ${_incident?.point?.name ?? 'Не назначена'}',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
                                 'Ответственный: ${_incident?.responsibleUser?.displayName ?? 'Не назначен'}',
                                 style: TextStyle(fontSize: 16),
                               ),
@@ -1146,7 +1149,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                     },
                   ),
                 ),
-                if (_incident != null && !_incident!.isAccepted)
+                if (_incident != null && _incident!.status == "waiting_to_be_accepted")
                   Center(
                     child: StyledWideButton(
                       text: "Принять инцидент",
@@ -1154,13 +1157,14 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                       bg: Theme.of(context).dialogBackgroundColor,
                       fg: Theme.of(context).primaryColor,
                       onPressed: () async {
-                        var response = await sendRequestWithStatus("POST",
-                            "dispatch/incidents/${widget.incidentId}/accept/");
-                        if (response.statusCode != 204) {
-                          raiseErrorFlushbar(context, "Инцидент не удалось принять. Его может принять только ответственный.");
-                        } else {
+                        try {
+                          await sendRequest("POST",
+                              "dispatch/incidents/${widget.incidentId}/change_status/",
+                              body: {"status": "opened"});
                           raiseSuccessFlushbar(context, "Инцидент принят вами.");
                           fetchAll();
+                        } catch (error) {
+                          raiseErrorFlushbar(context, "Инцидент не удалось принять. Его может принять только ответственный.");
                         }
                       },
                     ),
