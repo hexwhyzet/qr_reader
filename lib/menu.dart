@@ -141,7 +141,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
       if (response != null &&
           response.containsKey('success') &&
-          response['success']) {
+          response['success'] &&
+          response.containsKey('available_apps')) {
         if (response['available_apps'].contains('qr_patrol')) {
           isQrServiceAvailable = true;
         }
@@ -163,12 +164,16 @@ class _MenuScreenState extends State<MenuScreen> {
       config.userId.setSetting(response['id'].toString());
     }
 
-    final messaging = FirebaseMessaging.instance;
-    final token = await messaging.getToken();
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final token = await messaging.getToken();
 
-    if (token != null) {
-      sendRequest('POST', 'register_notification_token/',
-          body: {'notification_token': token});
+      if (token != null) {
+        sendRequest('POST', 'register_notification_token/',
+            body: {'notification_token': token});
+      }
+    } catch(e) {
+      print("Failed to send FCM token");
     }
 
     _iconInfo = [

@@ -31,6 +31,7 @@ class _CreateDishOrderState extends State<CreateDishOrderView> {
       initialDate: selectedDate,
       firstDate: firstDate,
       lastDate: lastDate,
+      locale: const Locale('ru', 'RU')
     );
     if (picked != null && picked != selectedDate) {
       setState(() {
