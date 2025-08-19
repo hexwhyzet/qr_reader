@@ -2,6 +2,7 @@ import 'dart:html' as html;                  // for Notification API
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../main.dart';
 
@@ -139,7 +140,15 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
 
     if (_unsupported) {
       return MaterialApp(
-          locale: const Locale('ru'),
+          locale: const Locale('ru', 'RU'),
+          supportedLocales: const [
+            Locale('ru', 'RU'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: Scaffold(
               appBar: AppBar(title: const Text('Необходимо разрешение')),
               body: Padding(
@@ -169,7 +178,15 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
 
     if (!_initialized) {
       return const MaterialApp(
-        locale: Locale('ru'),
+        locale: const Locale('ru', 'RU'),
+        supportedLocales: const [
+          Locale('ru', 'RU'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
@@ -177,7 +194,15 @@ class _FirebasePermissionGateState extends State<FirebasePermissionGate> {
     }
 
     return MaterialApp(
-        locale: const Locale('ru'),
+        locale: const Locale('ru', 'RU'),
+        supportedLocales: const [
+          Locale('ru', 'RU'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           appBar: AppBar(title: const Text('Необходимо разрешение')),
           body: Padding(
