@@ -396,7 +396,8 @@ class _IncidentListState extends State<IncidentList> {
   Widget build(BuildContext context) {
     List<Incident> responsibleIncidents = incidents
         .where((i) =>
-            i.responsibleUser?.id == currentUserId && (i.status == 'opened' || i.status == 'waiting_to_be_accepted'))
+            i.responsibleUser?.id == currentUserId &&
+            (i.status == 'opened' || i.status == 'waiting_to_be_accepted'))
         .toList();
     List<Incident> authorIncidents = incidents
         .where((i) =>
@@ -868,63 +869,66 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
   AppBar getAppBar() {
     return AppBar(
       title: Text('Инцидент №${widget.incidentId}'),
-      actions: availableActions.length > 0 ? [
-        PopupMenuButton<String>(
-          onSelected: (String value) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Вы выбрали: $value')),
-            );
-          },
-          itemBuilder: (BuildContext context) {
-            return [
-              if (availableActions.contains("opened"))
-                PopupMenuItem<String>(
-                  value: "Открыть",
-                  child: Text("Открыть"),
-                  onTap: () async {
-                    await sendRequest("POST",
-                        "dispatch/incidents/${widget.incidentId}/change_status/",
-                        body: {"status": "opened"});
-                    fetchAll();
-                  },
-                ),
-              if (availableActions.contains("closed"))
-                PopupMenuItem<String>(
-                  value: "Закрыть",
-                  child: Text("Закрыть"),
-                  onTap: () async {
-                    await sendRequest("POST",
-                        "dispatch/incidents/${widget.incidentId}/change_status/",
-                        body: {"status": "closed"});
-                    fetchAll();
-                  },
-                ),
-              if (availableActions.contains("force_closed"))
-                PopupMenuItem<String>(
-                  value: "Ненадлежащее выполнение",
-                  child: Text("Ненадлежащее выполнение"),
-                  onTap: () async {
-                    await sendRequest("POST",
-                        "dispatch/incidents/${widget.incidentId}/change_status/",
-                        body: {"status": "force_closed"});
-                    fetchAll();
-                  },
-                ),
-              if (availableActions.contains("escalate"))
-                PopupMenuItem<String>(
-                  value: "Вызвать дежурного сотрудника высшего уровня",
-                  child: Text("Вызвать дежурного сотрудника высшего уровня"),
-                  onTap: () async {
-                    await sendRequest("POST",
-                        "dispatch/incidents/${widget.incidentId}/escalate/");
-                    fetchAll();
-                  },
-                ),
-            ];
-          },
-          icon: Icon(Icons.more_vert), // Иконка кнопки в AppBar
-        ),
-      ] : [],
+      actions: availableActions.length > 0
+          ? [
+              PopupMenuButton<String>(
+                onSelected: (String value) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Вы выбрали: $value')),
+                  );
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    if (availableActions.contains("opened"))
+                      PopupMenuItem<String>(
+                        value: "Открыть",
+                        child: Text("Открыть"),
+                        onTap: () async {
+                          await sendRequest("POST",
+                              "dispatch/incidents/${widget.incidentId}/change_status/",
+                              body: {"status": "opened"});
+                          fetchAll();
+                        },
+                      ),
+                    if (availableActions.contains("closed"))
+                      PopupMenuItem<String>(
+                        value: "Закрыть",
+                        child: Text("Закрыть"),
+                        onTap: () async {
+                          await sendRequest("POST",
+                              "dispatch/incidents/${widget.incidentId}/change_status/",
+                              body: {"status": "closed"});
+                          fetchAll();
+                        },
+                      ),
+                    if (availableActions.contains("force_closed"))
+                      PopupMenuItem<String>(
+                        value: "Ненадлежащее выполнение",
+                        child: Text("Ненадлежащее выполнение"),
+                        onTap: () async {
+                          await sendRequest("POST",
+                              "dispatch/incidents/${widget.incidentId}/change_status/",
+                              body: {"status": "force_closed"});
+                          fetchAll();
+                        },
+                      ),
+                    if (availableActions.contains("escalate"))
+                      PopupMenuItem<String>(
+                        value: "Вызвать дежурного сотрудника высшего уровня",
+                        child:
+                            Text("Вызвать дежурного сотрудника высшего уровня"),
+                        onTap: () async {
+                          await sendRequest("POST",
+                              "dispatch/incidents/${widget.incidentId}/escalate/");
+                          fetchAll();
+                        },
+                      ),
+                  ];
+                },
+                icon: Icon(Icons.more_vert), // Иконка кнопки в AppBar
+              ),
+            ]
+          : [],
     );
   }
 
@@ -933,91 +937,91 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
     return Scaffold(
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
-      floatingActionButton: (_incident != null && _incident!.status != "waiting_to_be_accepted")
-          ? ExpandableFab(
-              key: widget.expandableFabKey,
-              openButtonBuilder: RotateFloatingActionButtonBuilder(
-                child: const Icon(Icons.add, size: 32),
-                fabSize: ExpandableFabSize.regular,
-                foregroundColor: Colors.white,
-                backgroundColor: Theme.of(context).primaryColor,
-                shape: const CircleBorder(),
-              ),
-              closeButtonBuilder: DefaultFloatingActionButtonBuilder(
-                child: const Icon(Icons.close),
-                fabSize: ExpandableFabSize.small,
-                foregroundColor: Colors.white,
-                backgroundColor: Theme.of(context).primaryColor,
-                shape: const CircleBorder(),
-              ),
-              children: [
-                FloatingActionButton(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  heroTag: null,
-                  child: const Icon(Icons.edit),
-                  onPressed: () {
-                    showMessageModal(context);
-                    final state = widget.expandableFabKey.currentState;
-                    if (state != null) {
-                      state.toggle();
-                    }
-                  },
-                ),
-                FloatingActionButton(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  heroTag: null,
-                  child: const Icon(Icons.image),
-                  onPressed: () async {
-                    final ImagePicker picker = ImagePicker();
-                    ImageSource? source = await _showMediaOptions(context);
-                    if (source != null) {
-                      XFile? image = await picker.pickImage(source: source);
-                      if (image != null) {
-                        await sendFileWithMultipart(
-                            "POST",
-                            "dispatch/incidents/${widget.incidentId}/messages/",
-                            image,
-                            "photo",
-                            body: {"message_type": "photo"});
-                        fetchMessages();
-                      }
-                    }
-                  },
-                ),
-                FloatingActionButton(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  heroTag: null,
-                  child: const Icon(
-                    Icons.video_camera_back_outlined,
-                    size: 32,
+      floatingActionButton:
+          (_incident != null && _incident!.status != "waiting_to_be_accepted")
+              ? ExpandableFab(
+                  key: widget.expandableFabKey,
+                  openButtonBuilder: RotateFloatingActionButtonBuilder(
+                    child: const Icon(Icons.add, size: 32),
+                    fabSize: ExpandableFabSize.regular,
+                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    shape: const CircleBorder(),
                   ),
-                  onPressed: () async {
-                    await requestPermissions();
-                    final ImagePicker picker = ImagePicker();
-                    ImageSource? source = await _showMediaOptions(context);
-                    if (source != null) {
-                      XFile? video = await picker.pickVideo(source: source);
-                      if (video != null) {
-                        await sendFileWithMultipart(
-                            "POST",
-                            "dispatch/incidents/${widget.incidentId}/messages/",
-                            video,
-                            "video",
-                            body: {"message_type": "video"});
-                        fetchMessages();
-                      }
-                    }
-                  },
-                ),
-                // FloatingActionButton(
-                //   backgroundColor: Theme.of(context).primaryColor,
-                //   heroTag: null,
-                //   child: const Icon(Icons.mic_rounded),
-                //   onPressed: () {},
-                // ),
-              ],
-            )
-          : null,
+                  closeButtonBuilder: DefaultFloatingActionButtonBuilder(
+                    child: const Icon(Icons.close),
+                    fabSize: ExpandableFabSize.small,
+                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    shape: const CircleBorder(),
+                  ),
+                  children: [
+                    FloatingActionButton(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      heroTag: null,
+                      child: const Icon(Icons.edit),
+                      onPressed: () {
+                        showMessageModal(context);
+                        final state = widget.expandableFabKey.currentState;
+                        if (state != null) {
+                          state.toggle();
+                        }
+                      },
+                    ),
+                    FloatingActionButton(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      heroTag: null,
+                      child: const Icon(Icons.image),
+                      onPressed: () async {
+                        final ImagePicker picker = ImagePicker();
+                        ImageSource? source = await _showMediaOptions(context);
+                        if (source != null) {
+                          XFile? image = await picker.pickImage(source: source);
+                          if (image != null) {
+                            await sendFileWithMultipart(
+                                "POST",
+                                "dispatch/incidents/${widget.incidentId}/messages/",
+                                image,
+                                "photo",
+                                body: {"message_type": "photo"});
+                            fetchMessages();
+                          }
+                        }
+                      },
+                    ),
+                    FloatingActionButton(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      heroTag: null,
+                      child: const Icon(
+                        Icons.video_camera_back_outlined,
+                        size: 32,
+                      ),
+                      onPressed: () async {
+                        final ImagePicker picker = ImagePicker();
+                        ImageSource? source = await _showMediaOptions(context);
+                        if (source != null) {
+                          XFile? video = await picker.pickVideo(source: source);
+                          if (video != null) {
+                            await sendFileWithMultipart(
+                                "POST",
+                                "dispatch/incidents/${widget.incidentId}/messages/",
+                                video,
+                                "video",
+                                body: {"message_type": "video"});
+                            fetchMessages();
+                          }
+                        }
+                      },
+                    ),
+                    // FloatingActionButton(
+                    //   backgroundColor: Theme.of(context).primaryColor,
+                    //   heroTag: null,
+                    //   child: const Icon(Icons.mic_rounded),
+                    //   onPressed: () {},
+                    // ),
+                  ],
+                )
+              : null,
       appBar: getAppBar(),
       body: _incident == null
           ? Center(child: CircularProgressIndicator())
@@ -1149,7 +1153,8 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                     },
                   ),
                 ),
-                if (_incident != null && _incident!.status == "waiting_to_be_accepted")
+                if (_incident != null &&
+                    _incident!.status == "waiting_to_be_accepted")
                   Center(
                     child: StyledWideButton(
                       text: "Принять инцидент",
@@ -1161,10 +1166,12 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                           await sendRequest("POST",
                               "dispatch/incidents/${widget.incidentId}/change_status/",
                               body: {"status": "opened"});
-                          raiseSuccessFlushbar(context, "Инцидент принят вами.");
+                          raiseSuccessFlushbar(
+                              context, "Инцидент принят вами.");
                           fetchAll();
                         } catch (error) {
-                          raiseErrorFlushbar(context, "Инцидент не удалось принять. Его может принять только ответственный.");
+                          raiseErrorFlushbar(context,
+                              "Инцидент не удалось принять. Его может принять только ответственный.");
                         }
                       },
                     ),
@@ -1198,6 +1205,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           videoPlayerController: _controller,
           autoPlay: true,
           looping: false,
+          allowFullScreen: false,
         );
       });
     });
@@ -1214,13 +1222,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: Text("Видео"), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: const Text("Видео"),
+        titleTextStyle: const TextStyle(color: Colors.white),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+      ),
       body: Center(
         child: _chewieController != null
             ? Chewie(
                 controller: _chewieController!,
               )
-            : CircularProgressIndicator(),
+            : const CircularProgressIndicator(),
       ),
     );
   }
