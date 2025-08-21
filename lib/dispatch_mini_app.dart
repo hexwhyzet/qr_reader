@@ -394,22 +394,19 @@ class _IncidentListState extends State<IncidentList> {
 
   @override
   Widget build(BuildContext context) {
-    List<Incident> responsibleIncidents = incidents
-        .where((i) =>
-            i.responsibleUser?.id == currentUserId &&
-            (i.status == 'opened' || i.status == 'waiting_to_be_accepted'))
-        .toList();
-    List<Incident> authorIncidents = incidents
-        .where((i) =>
-            i.author?.id == currentUserId &&
-            i.responsibleUser?.id != currentUserId &&
-            i.status == 'opened')
-        .toList();
-    List<Incident> otherIncidents = incidents
-        .where((i) =>
-            i.responsibleUser?.id != currentUserId &&
-            i.author?.id != currentUserId)
-        .toList();
+    List<Incident> responsibleIncidents = [];
+    List<Incident> authorIncidents = [];
+    List<Incident> otherIncidents = [];
+
+    for (final i in incidents) {
+      if (i.responsibleUser?.id == currentUserId) {
+        responsibleIncidents.add(i);
+      } else if (i.author?.id == currentUserId) {
+        authorIncidents.add(i);
+      } else {
+        otherIncidents.add(i);
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -464,7 +461,7 @@ class IncidentTile extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.only(top: 5, bottom: 5),
-              child: Text('Точка: $pointName'),
+              child: Text('Система: $pointName'),
             ),
             Text('Инцидент создан: $timeAgo'),
           ],
