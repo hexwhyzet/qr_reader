@@ -1156,8 +1156,8 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen>
                     child: StyledWideButton(
                       text: "Принять инцидент",
                       height: 100.0,
-                      bg: Theme.of(context).dialogBackgroundColor,
-                      fg: Theme.of(context).primaryColor,
+                      bg: Theme.of(context).primaryColor,
+                      fg: Theme.of(context).dialogBackgroundColor,
                       onPressed: () async {
                         try {
                           await sendRequest("POST",
