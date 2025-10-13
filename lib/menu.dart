@@ -162,6 +162,12 @@ class _MenuScreenState extends State<MenuScreen> {
 
     if (response != null) {
       config.userId.setSetting(response['id'].toString());
+      if (response.containsKey('extra') &&
+          response['extra'] != null &&
+          response['extra'].containsKey('guard_id') &&
+          response['extra']['guard_id'] != null) {
+        config.code.setSetting(response['extra']['guard_id'].toString());
+      }
     }
 
     try {

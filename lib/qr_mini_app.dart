@@ -248,39 +248,41 @@ class _QRMiniAppState extends State<QRMiniApp> {
         child: Center(
           child: _isLoading
               ? CircularProgressIndicator()
-              : Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Expanded(
-                        child: Column(
-                      children: [
+              : _name == null
+                  ? CircularProgressIndicator()
+                  : Column(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
                         Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              if (_onRounds)
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 15),
-                                  child: StyledWideButton(
-                                    text: "ЗАКОНЧИТЬ ОБХОД",
-                                    height: 60.0,
-                                    bg: Colors.red,
-                                    fg: Colors.white,
-                                    onPressed: _endRound,
+                            child: Column(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (_onRounds)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 15),
+                                      child: StyledWideButton(
+                                        text: "ЗАКОНЧИТЬ ОБХОД",
+                                        height: 60.0,
+                                        bg: Colors.red,
+                                        fg: Colors.white,
+                                        onPressed: _endRound,
+                                      ),
+                                    ),
+                                  Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    child: Align(
+                                      alignment: Alignment.center,
+                                      child: Text(_name!,
+                                          style: TextStyle(
+                                              fontSize: 25,
+                                              fontWeight: FontWeight.bold),
+                                          textAlign: TextAlign.center),
+                                    ),
                                   ),
-                                ),
-                              Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: Align(
-                                  alignment: Alignment.center,
-                                  child: Text(_name!,
-                                      style: TextStyle(
-                                          fontSize: 25,
-                                          fontWeight: FontWeight.bold),
-                                      textAlign: TextAlign.center),
-                                ),
-                              ),
                               Expanded(
                                   child: Container(
                                 child: Stack(
