@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qr_reader/settings.dart';
+import 'package:qr_reader/notifications.dart';
 
 AppBar CustomAppBar(BuildContext context, [VoidCallback? onLogout]) {
   return AppBar(
@@ -31,6 +32,24 @@ AppBar CustomAppBar(BuildContext context, [VoidCallback? onLogout]) {
               ),
             ),
           );
+        },
+      ),
+      IconButton(
+        icon: Padding(
+          padding: EdgeInsets.only(right: 7.0),
+          child: NotificationBadge(key: NotificationBadge.globalKey),
+        ),
+        onPressed: () {
+          Navigator.of(context)
+              .push(
+            MaterialPageRoute(
+              builder: (context) => NotificationsScreen(),
+            ),
+          )
+              .then((_) {
+            // вызываем refresh после возврата с экрана уведомлений
+            NotificationBadge.globalKey.currentState?.refreshUnreadCount();
+          });
         },
       )
     ],
